@@ -1,0 +1,210 @@
+// Rajveer Travels — PostgreSQL schema
+// Handles all transactional / relational data where consistency matters:
+// users, buses, routes, trips, seats, bookings, payments.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum BusType {
+  AC_SEATER
+  AC_SLEEPER
+  NON_AC_SEATER
+  NON_AC_SLEEPER
+}
+
+enum SeatStatus {
+  AVAILABLE
+  LOCKED
+  BOOKED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  CREATED
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum ComplaintCategory {
+  BUS
+  SERVICE
+  DRIVER
+  PAYMENT
+  OTHER
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum Language {
+  ENGLISH
+  HINDI
+}
+
+model User {
+  id         String    @id @default(cuid())
+  auth0Id    String?   @unique
+  name       String
+  email      String    @unique
+  phone      String?
+  address    String?
+  phoneVerified Boolean @default(false)
+  emailVerified Boolean @default(false)
+  emailOtpHash String?
+  emailOtpExpiresAt DateTime?
+  pendingEmail String?
+  language   Language   @default(ENGLISH)
+  role       Role      @default(USER)
+  isSuperAdmin Boolean  @default(false)
+  notificationChannel NotificationChannel?
+  createdAt  DateTime  @default(now())
+  bookings   Booking[]
+  complaints Complaint[]
+  refunds    RefundRequest[]
+}
+
+model Bus {
+  id                String   @id @default(cuid())
+  operator          String   @default("Rajveer Travels")
+  busNumber         String   @unique
+  type              BusType
+  totalSeats        Int
+  amenities         String[] @default([])
+  upiId             String?
+  paymentQrUrl      String?
+  createdAt         DateTime @default(now())
+  trips             Trip[]
+}
+
+model Route {
+  id            String   @id @default(cuid())
+  source        String
+  destination   String
+  distanceKm    Int
+  durationMins  Int
+  createdAt     DateTime @default(now())
+  trips         Trip[]
+
+  @@index([source, destination])
+}
+
+model Trip {
+  id             String    @id @default(cuid())
+  busId          String
+  bus            Bus       @relation(fields: [busId], references: [id])
+  routeId        String
+  route          Route     @relation(fields: [routeId], references: [id])
+  departureTime  DateTime
+  arrivalTime    DateTime
+  travelDate     DateTime
+  fare           Decimal   @db.Decimal(10, 2)
+  createdAt      DateTime  @default(now())
+  seats          Seat[]
+  bookings       Booking[]
+
+  @@index([travelDate])
+  @@index([routeId, travelDate])
+}
+
+model Seat {
+  id           String     @id @default(cuid())
+  tripId       String
+  trip         Trip       @relation(fields: [tripId], references: [id])
+  seatNumber   String
+  status       SeatStatus @default(AVAILABLE)
+  lockedUntil  DateTime?
+  bookingId    String?
+  booking      Booking?   @relation(fields: [bookingId], references: [id])
+
+  @@unique([tripId, seatNumber])
+}
+
+model Booking {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  tripId         String
+  trip           Trip          @relation(fields: [tripId], references: [id])
+  seats          Seat[]
+  passengerInfo  Json
+  totalAmount    Decimal       @db.Decimal(10, 2)
+  status         BookingStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  payment        Payment?
+  complaints     Complaint[]
+  refundRequest  RefundRequest?
+}
+
+model Payment {
+  id                 String        @id @default(cuid())
+  bookingId          String        @unique
+  booking            Booking       @relation(fields: [bookingId], references: [id])
+  razorpayOrderId    String
+  razorpayPaymentId  String?
+  razorpaySignature  String?
+  amount             Decimal       @db.Decimal(10, 2)
+  status             PaymentStatus @default(CREATED)
+  createdAt          DateTime      @default(now())
+}
+
+model Complaint {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  bookingId   String?
+  booking     Booking?         @relation(fields: [bookingId], references: [id])
+  category    ComplaintCategory
+  message     String
+  status      ComplaintStatus  @default(OPEN)
+  createdAt   DateTime         @default(now())
+  resolvedAt  DateTime?
+
+  @@index([status, createdAt])
+}
+
+model RefundRequest {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  bookingId     String       @unique
+  booking       Booking      @relation(fields: [bookingId], references: [id])
+  upiId         String
+  amount        Decimal      @db.Decimal(10, 2)
+  status        RefundStatus @default(REQUESTED)
+  adminMessage  String?
+  createdAt     DateTime     @default(now())
+  processedAt   DateTime?
+}

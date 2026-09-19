@@ -1,0 +1,30 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/requireAdmin";
+import { z } from "zod";
+
+const routeSchema = z.object({
+  source: z.string().min(2),
+  destination: z.string().min(2),
+  distanceKm: z.number().int().positive(),
+  durationMins: z.number().int().positive(),
+});
+
+export async function GET() {
+  const routes = await prisma.route.findMany({ orderBy: { createdAt: "desc" } });
+  return NextResponse.json(routes);
+}
+
+export async function POST(req: NextRequest) {
+  const guard = await requireAdmin(req);
+  if (!guard.ok) return NextResponse.json({ error: guard.message }, { status: guard.status });
+
+  const body = await req.json();
+  const parsed = routeSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const route = await prisma.route.create({ data: parsed.data });
+  return NextResponse.json(route, { status: 201 });
+}

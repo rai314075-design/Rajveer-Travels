@@ -34,16 +34,17 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
       body: JSON.stringify({ name: nameValue, phone: phoneValue, address: addressValue, language: languageValue }),
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({ error: "Could not update profile. Please try again." }));
     setMessage(response.ok ? (hindi ? "प्रोफ़ाइल अपडेट हो गई।" : "Profile updated.") : data.error || (hindi ? "प्रोफ़ाइल अपडेट नहीं हो सकी।" : "Could not update profile."));
     setSaving(false);
   }
 
   async function sendOtp() {
     const response = await fetch("/api/profile/phone/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: phoneValue }) });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({ error: "Could not send phone verification code. Please try again." }));
     setMessage(response.ok ? (hindi ? "फोन पर सत्यापन कोड भेज दिया गया है।" : "Phone verification code sent.") : data.error);
     if (response.ok) {
+      setPhoneValue(data.phone || phoneValue);
       setCode("");
       setOtpSent(true);
     }
@@ -51,9 +52,10 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
 
   async function verifyPhone() {
     const response = await fetch("/api/profile/phone/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: phoneValue, code }) });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({ error: "Could not verify phone number. Please try again." }));
     setMessage(response.ok ? (hindi ? "फोन नंबर सत्यापित हो गया।" : "Phone number verified.") : data.error);
     if (response.ok) {
+      setPhoneValue(data.phone || phoneValue);
       setOtpSent(false);
       setPhoneIsVerified(true);
     }
@@ -61,7 +63,7 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
 
   async function sendEmailOtp() {
     const response = await fetch("/api/profile/email/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: emailValue }) });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({ error: "Could not send email verification code. Please try again." }));
     setMessage(response.ok ? (hindi ? "ईमेल पर सत्यापन कोड भेज दिया गया है।" : "Email verification code sent.") : data.error);
     if (response.ok) {
       setEmailCode("");
@@ -71,7 +73,7 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
 
   async function verifyEmail() {
     const response = await fetch("/api/profile/email/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: emailCode }) });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({ error: "Could not verify email address. Please try again." }));
     setMessage(response.ok ? (hindi ? "ईमेल सत्यापित हो गया।" : "Email verified.") : data.error);
     if (response.ok) {
       setEmailOtpSent(false);

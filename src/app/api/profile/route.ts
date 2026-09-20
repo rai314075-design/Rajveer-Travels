@@ -19,8 +19,8 @@ export async function PATCH(req: NextRequest) {
 
   const currentUser = await prisma.user.findUnique({ where: { auth0Id: session.user.sub }, select: { phone: true, phoneVerified: true } });
   if (!currentUser) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  const phone = parsed.data.phone.trim();
-  if (currentUser.phone !== phone && !currentUser.phoneVerified) {
+  const phone = parsed.data.phone.trim().replace(/[^\d+]/g, "");
+  if (currentUser.phone !== phone || !currentUser.phoneVerified) {
     return NextResponse.json({ error: "Verify the new phone number with OTP before saving" }, { status: 400 });
   }
   const existingPhone = await prisma.user.findFirst({ where: { phone, NOT: { auth0Id: session.user.sub } }, select: { id: true } });

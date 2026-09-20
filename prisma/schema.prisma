@@ -86,6 +86,11 @@ model User {
   emailOtpHash String?
   emailOtpExpiresAt DateTime?
   pendingEmail String?
+  phoneOtpHash String?
+  phoneOtpExpiresAt DateTime?
+  phoneOtpSentAt DateTime?
+  phoneOtpAttempts Int @default(0)
+  pendingPhone String?
   language   Language   @default(ENGLISH)
   role       Role      @default(USER)
   isSuperAdmin Boolean  @default(false)

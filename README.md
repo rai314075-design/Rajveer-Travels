@@ -21,9 +21,11 @@ the payment verify route.
    - `DATABASE_URL` — your Postgres connection string
    - `MONGODB_URI` — your MongoDB Atlas (or local) connection string
    - `AUTH0_*` — from your Auth0 application dashboard (Regular Web App)
+  - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` — used to send phone OTPs through Twilio Messaging API; no Twilio Verify Service SID is needed
    - `RAZORPAY_*` — from your Razorpay dashboard (test mode keys to start)
    - `JWT_SECRET`, `ADMIN_EMAIL` — `ADMIN_EMAIL` is auto-promoted to role `ADMIN` on first login
 3. `npx prisma migrate dev --name init` — creates all Postgres tables
+  - If this database already has the tables, use `npx prisma db push` after pulling schema changes.
 4. `npm run dev` — runs at http://localhost:3000
 
 ## Auth0 setup notes

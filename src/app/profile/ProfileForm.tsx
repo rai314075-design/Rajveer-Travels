@@ -1,6 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { RecaptchaVerifier, getAuth, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
+import { getApps, initializeApp } from "firebase/app";
+
+const firebaseApp = getApps().length > 0 ? getApps()[0] : initializeApp({
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+});
 
 export default function ProfileForm({ name, phone, address, language, phoneVerified, email, emailVerified }: { name: string; phone: string | null; address: string | null; language: "ENGLISH" | "HINDI"; phoneVerified: boolean; email: string; emailVerified: boolean }) {
   const [nameValue, setNameValue] = useState(name);
@@ -17,6 +26,8 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
   const [otpSent, setOtpSent] = useState(false);
   const [emailCode, setEmailCode] = useState("");
   const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const confirmationResult = useRef<ConfirmationResult | null>(null);
+  const recaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
 
   async function saveProfile(event: React.FormEvent) {
     event.preventDefault();
@@ -42,22 +53,52 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
   async function sendOtp() {
     const response = await fetch("/api/profile/phone/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: phoneValue }) });
     const data = await response.json().catch(() => ({ error: "Could not send phone verification code. Please try again." }));
-    setMessage(response.ok ? (hindi ? "फोन पर सत्यापन कोड भेज दिया गया है।" : "Phone verification code sent.") : data.error);
     if (response.ok) {
+      try {
+        recaptchaVerifier.current?.clear();
+        recaptchaVerifier.current = new RecaptchaVerifier(getAuth(firebaseApp), "phone-recaptcha", { size: "invisible" });
+        confirmationResult.current = await signInWithPhoneNumber(getAuth(firebaseApp), data.phone || phoneValue, recaptchaVerifier.current);
+        setMessage(hindi ? "फोन पर सत्यापन कोड भेज दिया गया है।" : "Phone verification code sent.");
+      } catch (error) {
+        const firebaseCode = error && typeof error === "object" && "code" in error ? String(error.code) : "unknown-error";
+        const errorMessage = firebaseCode === "auth/operation-not-allowed"
+          ? "Phone sign-in is disabled in Firebase. Enable Phone in Firebase Authentication providers."
+          : firebaseCode === "auth/unauthorized-domain"
+            ? "This website is not an authorized Firebase domain. Add localhost in Firebase Authentication settings."
+            : firebaseCode === "auth/invalid-phone-number"
+              ? "Firebase rejected this phone number. Include the country code, for example +919876543210."
+              : `Firebase could not send the OTP (${firebaseCode}). Check the browser console for details.`;
+        setMessage(hindi ? `OTP नहीं भेजा जा सका। ${errorMessage}` : errorMessage);
+        recaptchaVerifier.current?.clear();
+        recaptchaVerifier.current = null;
+        await fetch("/api/profile/phone/send", { method: "DELETE" });
+        return;
+      }
       setPhoneValue(data.phone || phoneValue);
       setCode("");
       setOtpSent(true);
-    }
+    } else setMessage(data.error);
   }
 
   async function verifyPhone() {
-    const response = await fetch("/api/profile/phone/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: phoneValue, code }) });
+    if (!confirmationResult.current) return;
+    let firebaseUser;
+    try {
+      firebaseUser = (await confirmationResult.current.confirm(code)).user;
+    } catch {
+      setMessage(hindi ? "फोन सत्यापन कोड गलत या समाप्त हो गया है।" : "The phone verification code is invalid or expired.");
+      return;
+    }
+    const response = await fetch("/api/profile/phone/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: phoneValue, idToken: await firebaseUser.getIdToken() }) });
     const data = await response.json().catch(() => ({ error: "Could not verify phone number. Please try again." }));
     setMessage(response.ok ? (hindi ? "फोन नंबर सत्यापित हो गया।" : "Phone number verified.") : data.error);
     if (response.ok) {
       setPhoneValue(data.phone || phoneValue);
       setOtpSent(false);
       setPhoneIsVerified(true);
+      confirmationResult.current = null;
+      recaptchaVerifier.current?.clear();
+      recaptchaVerifier.current = null;
     }
   }
 
@@ -111,33 +152,39 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
         )}
       </div>
       <div>
-        <label htmlFor="phone" className="block text-sm text-gray-500 mb-1">{hindi ? "फोन नंबर" : "Phone number"} <span className="text-red-600">*</span></label>
-        <input id="phone" type="tel" required value={phoneValue} onChange={(event) => { setPhoneValue(event.target.value); setPhoneIsVerified(event.target.value === phone ? phoneVerified : false); }} className="w-full border rounded-lg px-3 py-2" placeholder="Enter phone with country code" />
-        <p className="text-xs text-gray-500">{hindi ? "स्थिति:" : "Status:"} {phoneIsVerified && phoneValue === phone ? (hindi ? "सत्यापित" : "Verified") : (hindi ? "सत्यापित नहीं" : "Not verified")}</p>
-        {(!phoneIsVerified || phoneValue !== phone) && <button type="button" onClick={sendOtp} className="text-sm text-brand-700 font-medium">{hindi ? "फोन सत्यापन कोड भेजें" : "Send phone verification code"}</button>}
+        <label htmlFor={otpSent ? "phone-otp" : "phone"} className="block text-sm text-gray-500 mb-1">
+          {otpSent ? (hindi ? "फोन OTP" : "Phone OTP") : (hindi ? "फोन नंबर" : "Phone number")} <span className="text-red-600">*</span>
+        </label>
+        {otpSent ? (
+          <>
+            <p className="mb-2 text-sm text-gray-600">{hindi ? `${phoneValue} पर भेजा गया OTP दर्ज करें` : `Enter the OTP sent to ${phoneValue}`}</p>
+            <input
+              id="phone-otp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              pattern="[0-9]{6}"
+              required
+              autoFocus
+              value={code}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="Enter 6-digit OTP"
+              className="w-full border rounded-lg px-3 py-2 tracking-[0.3em]"
+            />
+          </>
+        ) : (
+          <input id="phone" type="tel" required value={phoneValue} onChange={(event) => { setPhoneValue(event.target.value); setPhoneIsVerified(event.target.value === phone ? phoneVerified : false); }} className="w-full border rounded-lg px-3 py-2" placeholder="Enter phone with country code" />
+        )}
+        {!otpSent && <p className="text-xs text-gray-500">{hindi ? "स्थिति:" : "Status:"} {phoneIsVerified && phoneValue === phone ? (hindi ? "सत्यापित" : "Verified") : (hindi ? "सत्यापित नहीं" : "Not verified")}</p>}
+        {(!otpSent && (!phoneIsVerified || phoneValue !== phone)) && <button type="button" onClick={sendOtp} className="text-sm text-brand-700 font-medium">{hindi ? "फोन सत्यापन कोड भेजें" : "Send phone verification code"}</button>}
         {otpSent && (
           <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-            <label htmlFor="phone-otp" className="block text-sm font-medium text-gray-700 mb-2">
-              {hindi ? "फोन पर भेजा गया 6 अंकों का सत्यापन कोड दर्ज करें" : "Enter the 6-digit verification code sent to your phone"}
-            </label>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                id="phone-otp"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                pattern="[0-9]{6}"
-                required
-                value={code}
-                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="123456"
-                className="border rounded-lg px-3 py-2 tracking-[0.3em]"
-              />
-              <button type="button" onClick={verifyPhone} disabled={code.length !== 6} className="bg-brand-600 text-white rounded-lg px-3 py-2 disabled:opacity-50">{hindi ? "फोन सत्यापित करें" : "Verify phone"}</button>
-            </div>
+            <p className="mb-2 text-sm font-medium text-gray-700">{hindi ? "OTP दर्ज करने के बाद सत्यापित करें" : "After entering the OTP, verify your phone"}</p>
+            <button type="button" onClick={verifyPhone} disabled={code.length !== 6} className="bg-brand-600 text-white rounded-lg px-3 py-2 disabled:opacity-50">{hindi ? "फोन सत्यापित करें" : "Verify phone"}</button>
           </div>
         )}
+        <div id="phone-recaptcha" />
       </div>
       <div>
         <label htmlFor="address" className="block text-sm text-gray-500 mb-1">{hindi ? "पता (वैकल्पिक)" : "Address (optional)"}</label>

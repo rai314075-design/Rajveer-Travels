@@ -14,11 +14,12 @@ export async function GET() {
     select: {
       id: true,
       status: true,
+      passengerInfo: true,
       trip: {
         select: {
           departureTime: true,
           bus: { select: { busNumber: true } },
-          route: { select: { source: true, destination: true } },
+          route: { select: { source: true, destination: true, pickupPoint: true, dropPoint: true } },
         },
       },
     },

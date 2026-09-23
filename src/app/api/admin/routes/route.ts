@@ -4,8 +4,10 @@ import { requireAdmin } from "@/lib/requireAdmin";
 import { z } from "zod";
 
 const routeSchema = z.object({
-  source: z.string().min(2),
-  destination: z.string().min(2),
+  source: z.string().trim().min(2),
+  destination: z.string().trim().min(2),
+  pickupPoint: z.string().trim().max(200).optional().or(z.literal("")),
+  dropPoint: z.string().trim().max(200).optional().or(z.literal("")),
   distanceKm: z.number().int().positive(),
   durationMins: z.number().int().positive(),
 });
@@ -25,6 +27,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const route = await prisma.route.create({ data: parsed.data });
+  const route = await prisma.route.create({
+    data: {
+      ...parsed.data,
+      pickupPoint: parsed.data.pickupPoint?.trim() || undefined,
+      dropPoint: parsed.data.dropPoint?.trim() || undefined,
+    },
+  });
   return NextResponse.json(route, { status: 201 });
 }

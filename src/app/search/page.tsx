@@ -60,6 +60,9 @@ export default async function SearchPage({
               <p className="text-sm mt-1">
                 {hindi ? "प्रस्थान" : "Departure"} {new Date(trip.departureTime).toLocaleTimeString()} → {hindi ? "आगमन" : "Arrival"} {new Date(trip.arrivalTime).toLocaleTimeString()}
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {trip.route.pickupPoint || trip.route.source} → {trip.route.dropPoint || trip.route.destination}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-xl font-bold text-brand-700">₹{trip.fare.toString()}</p>

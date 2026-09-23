@@ -118,6 +118,8 @@ model Route {
   id            String   @id @default(cuid())
   source        String
   destination   String
+  pickupPoint   String?
+  dropPoint     String?
   distanceKm    Int
   durationMins  Int
   createdAt     DateTime @default(now())

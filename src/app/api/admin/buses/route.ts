@@ -10,6 +10,9 @@ const busSchema = z.object({
   amenities: z.array(z.string()).optional(),
   upiId: z.string().trim().max(255).optional().or(z.literal("")),
   paymentQrUrl: z.string().trim().max(2048).optional().or(z.literal("")),
+  ownerPhone: z.string().trim().max(30).optional().or(z.literal("")),
+  pickupLocation: z.string().trim().max(200).optional().or(z.literal("")),
+  dropLocation: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
 export async function GET() {
@@ -31,6 +34,9 @@ export async function POST(req: NextRequest) {
     ...parsed.data,
     upiId: parsed.data.upiId?.trim() || null,
     paymentQrUrl: parsed.data.paymentQrUrl?.trim() || null,
+    ownerPhone: parsed.data.ownerPhone?.trim() || null,
+    pickupLocation: parsed.data.pickupLocation?.trim() || null,
+    dropLocation: parsed.data.dropLocation?.trim() || null,
   };
 
   const bus = await prisma.bus.create({ data: normalizedData });

@@ -61,6 +61,9 @@ export async function POST(req: NextRequest) {
       customerEmail: booking.user.email,
       customerPhone: booking.user.phone,
       busNumber: booking.trip.bus.busNumber,
+      busOwnerPhone: booking.trip.bus.ownerPhone,
+      pickupLocation: booking.trip.bus.pickupLocation,
+      dropLocation: booking.trip.bus.dropLocation,
       departureTime: booking.trip.departureTime,
       source: booking.trip.route.source,
       destination: booking.trip.route.destination,
@@ -72,6 +75,9 @@ export async function POST(req: NextRequest) {
       paymentMethod: "UPI_QR",
       paymentReference: paymentReference || "UPI_MANUAL",
       busUpiId: booking.trip.bus.upiId,
+      busOwnerPhone: booking.trip.bus.ownerPhone,
+      pickupLocation: booking.trip.bus.pickupLocation,
+      dropLocation: booking.trip.bus.dropLocation,
     });
   } catch (err) {
     console.error(err);

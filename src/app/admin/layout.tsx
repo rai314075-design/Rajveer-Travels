@@ -1,13 +1,13 @@
-import { getSession } from "@auth0/nextjs-auth0";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCustomSession } from "@/lib/session";
 
 async function ensureAdmin() {
-  const session = await getSession();
-  if (!session?.user) redirect("/");
+  const sessionUser = await getCustomSession();
+  if (!sessionUser) redirect("/");
 
   const user = await prisma.user.findUnique({
-    where: { auth0Id: session.user.sub },
+    where: { id: sessionUser.id },
     select: { role: true, isSuperAdmin: true },
   });
 
@@ -24,6 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <p className="text-xs uppercase text-gray-500 mb-2">Admin</p>
         <a href="/admin" className="block px-3 py-2 rounded hover:bg-gray-800 font-bold">Dashboard</a>
         <a href="/admin/buses" className="block px-3 py-2 rounded hover:bg-gray-800 font-bold">Buses</a>
+        <a href="/admin/layout-builder" className="block px-3 py-2 rounded hover:bg-gray-800 font-bold">Layout Builder</a>
         <a href="/admin/routes" className="block px-3 py-2 rounded hover:bg-gray-800 font-bold">Routes</a>
         <a href="/admin/trips" className="block px-3 py-2 rounded hover:bg-gray-800 font-bold">Trips & Dates</a>
         <a href="/admin/notifications" className="block px-3 py-2 rounded hover:bg-gray-800 font-bold">Notifications</a>

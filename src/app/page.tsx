@@ -1,9 +1,8 @@
-import { getSession } from "@auth0/nextjs-auth0";
-import { prisma } from "@/lib/prisma";
+import { getCustomSession } from "@/lib/session";
 
 export default async function HomePage() {
-  const session = await getSession();
-  const language = session?.user?.sub ? (await prisma.user.findUnique({ where: { auth0Id: session.user.sub }, select: { language: true } }))?.language : "ENGLISH";
+  const user = await getCustomSession();
+  const language = user?.language || "ENGLISH";
   const hindi = language === "HINDI";
 
   return (

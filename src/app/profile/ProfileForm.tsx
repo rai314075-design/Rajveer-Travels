@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RecaptchaVerifier, getAuth, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { getApps, initializeApp } from "firebase/app";
 
@@ -29,6 +29,21 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
   const confirmationResult = useRef<ConfirmationResult | null>(null);
   const recaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
 
+  // Initialize the invisible reCAPTCHA verifier once on mount so the
+  // grecaptcha script is loaded before the user requests phone OTP.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const auth = getAuth(firebaseApp);
+    if (!recaptchaVerifier.current) {
+      recaptchaVerifier.current = new RecaptchaVerifier(auth, "phone-recaptcha", {
+        size: "invisible",
+        callback: () => {
+          // reCAPTCHA solved — the verifier will be used by signInWithPhoneNumber.
+        },
+      });
+    }
+  }, [firebaseApp]);
+
   async function saveProfile(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -55,9 +70,8 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
     const data = await response.json().catch(() => ({ error: "Could not send phone verification code. Please try again." }));
     if (response.ok) {
       try {
-        recaptchaVerifier.current?.clear();
-        recaptchaVerifier.current = new RecaptchaVerifier(getAuth(firebaseApp), "phone-recaptcha", { size: "invisible" });
-        confirmationResult.current = await signInWithPhoneNumber(getAuth(firebaseApp), data.phone || phoneValue, recaptchaVerifier.current);
+        const auth = getAuth(firebaseApp);
+        confirmationResult.current = await signInWithPhoneNumber(auth, data.phone || phoneValue, recaptchaVerifier.current!);
         setMessage(hindi ? "फोन पर सत्यापन कोड भेज दिया गया है।" : "Phone verification code sent.");
       } catch (error) {
         const firebaseCode = error && typeof error === "object" && "code" in error ? String(error.code) : "unknown-error";

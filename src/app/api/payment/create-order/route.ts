@@ -33,6 +33,9 @@ export async function POST(req: NextRequest) {
       qrCodeUrl: bus.paymentQrUrl,
       amount: booking.totalAmount.toString(),
       currency: "INR",
+      busOwnerPhone: bus.ownerPhone,
+      pickupLocation: bus.pickupLocation,
+      dropLocation: bus.dropLocation,
       message: "Pay using the UPI ID or QR code shown by the bus owner.",
     });
   } catch (err) {

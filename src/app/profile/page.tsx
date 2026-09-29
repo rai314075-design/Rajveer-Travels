@@ -1,14 +1,14 @@
-import { getSession } from "@auth0/nextjs-auth0";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCustomSession } from "@/lib/session";
 import ProfileForm from "./ProfileForm";
 
 export default async function ProfilePage() {
-  const session = await getSession();
-  if (!session?.user?.sub) redirect("/api/auth/login?returnTo=%2Fprofile");
+  const sessionUser = await getCustomSession();
+  if (!sessionUser) redirect("/login");
 
   const user = await prisma.user.findUnique({
-    where: { auth0Id: session.user.sub },
+    where: { id: sessionUser.id },
     select: {
       name: true,
       email: true,

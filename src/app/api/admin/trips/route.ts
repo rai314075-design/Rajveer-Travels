@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
   const destination = searchParams.get("destination");
   const date = searchParams.get("date");
 
+  const now = new Date();
+
   const trips = await prisma.trip.findMany({
     where: {
       ...(date && {
@@ -34,6 +36,9 @@ export async function GET(req: NextRequest) {
             },
           }
         : {}),
+      departureTime: {
+        gt: now,
+      },
     },
     include: { bus: true, route: true },
     orderBy: { departureTime: "asc" },
@@ -55,7 +60,21 @@ export async function POST(req: NextRequest) {
   const bus = await prisma.bus.findUnique({ where: { id: parsed.data.busId } });
   if (!bus) return NextResponse.json({ error: "Bus not found" }, { status: 404 });
 
-  // Create the trip, then auto-generate one Seat row per seat on the bus (1, 2, 3...)
+  // Find the vehicle for this bus to get its seat templates
+  const vehicle = await prisma.vehicle.findFirst({
+    where: {
+      trips: {
+        some: {
+          busId: parsed.data.busId,
+        },
+      },
+    },
+    include: {
+      seatTemplates: true,
+    },
+  });
+
+  // Create the trip and copy seat templates to Seat entities
   const trip = await prisma.trip.create({
     data: {
       busId: parsed.data.busId,
@@ -64,10 +83,12 @@ export async function POST(req: NextRequest) {
       departureTime: new Date(parsed.data.departureTime),
       arrivalTime: new Date(parsed.data.arrivalTime),
       fare: parsed.data.fare,
+      // Copy seat templates as initial Seat entities for this trip
       seats: {
-        create: Array.from({ length: bus.totalSeats }, (_, i) => ({
-          seatNumber: `S${i + 1}`,
-        })),
+        create: vehicle?.seatTemplates?.map((template) => ({
+          seatNumber: template.seatNumber,
+          // Initial status is AVAILABLE
+        })) ?? [],
       },
     },
     include: { seats: true },

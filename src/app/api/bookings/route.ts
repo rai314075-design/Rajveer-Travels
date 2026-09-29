@@ -18,7 +18,8 @@ export async function GET() {
       trip: {
         select: {
           departureTime: true,
-          bus: { select: { busNumber: true } },
+          arrivalTime: true,
+          bus: { select: { busNumber: true, ownerPhone: true, pickupLocation: true, dropLocation: true } },
           route: { select: { source: true, destination: true, pickupPoint: true, dropPoint: true } },
         },
       },

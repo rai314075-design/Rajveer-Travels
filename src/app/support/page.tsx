@@ -12,7 +12,7 @@ export default function SupportPage() {
   const [upiId, setUpiId] = useState("");
   const [notice, setNotice] = useState("");
   const [hindi, setHindi] = useState(false);
-  const [bookings, setBookings] = useState<Array<{ id: string; status: string; trip: { departureTime: string; bus: { busNumber: string }; route: { source: string; destination: string } } }>>([]);
+  const [bookings, setBookings] = useState<Array<{ id: string; status: string; trip: { departureTime: string; arrivalTime: string; bus: { busNumber: string; ownerPhone?: string | null; pickupLocation?: string | null; dropLocation?: string | null }; route: { source: string; destination: string; pickupPoint?: string | null; dropPoint?: string | null } } }>>([]);
 
   useEffect(() => {
     fetch("/api/bookings").then((response) => response.ok ? response.json() : []).then(setBookings);
@@ -42,9 +42,21 @@ export default function SupportPage() {
         <h2 className="text-xl font-semibold">{hindi ? "मेरी बुकिंग" : "My bookings"}</h2>
         <p className="text-sm text-gray-600">{hindi ? "रद्द करने से पहले बस मालिक से संपर्क करें।" : "Contact the bus owner before cancelling."}</p>
         {bookings.length === 0 ? <p className="text-sm text-gray-500">{hindi ? "अभी कोई बुकिंग नहीं है।" : "No bookings yet."}</p> : bookings.map((booking) => (
-          <div key={booking.id} className="border-t pt-4">
-            <p className="font-medium">{booking.trip.bus.busNumber} · {booking.trip.route.source} → {booking.trip.route.destination}</p>
-            <p className="text-sm text-gray-500">{new Date(booking.trip.departureTime).toLocaleString()} · {booking.status}</p>
+          <div key={booking.id} className="border rounded-xl p-4 mb-4 shadow-sm space-y-2">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-semibold text-lg">{booking.trip.bus.busNumber} — {booking.trip.route.source} → {booking.trip.route.destination}</p>
+                <p className="text-sm text-gray-500">{new Date(booking.trip.departureTime).toLocaleString()} → {new Date(booking.trip.arrivalTime).toLocaleString()}</p>
+              </div>
+              <span className="text-sm font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">{booking.status}</span>
+            </div>
+            <div className="text-sm text-gray-600 space-y-1 mt-2">
+              {booking.trip.bus.pickupLocation && <p><span className="font-medium">Pickup:</span> {booking.trip.bus.pickupLocation}</p>}
+              {booking.trip.bus.dropLocation && <p><span className="font-medium">Drop:</span> {booking.trip.bus.dropLocation}</p>}
+              {booking.trip.route.pickupPoint && !booking.trip.bus.pickupLocation && <p><span className="font-medium">Pickup:</span> {booking.trip.route.pickupPoint}</p>}
+              {booking.trip.route.dropPoint && !booking.trip.bus.dropLocation && <p><span className="font-medium">Drop:</span> {booking.trip.route.dropPoint}</p>}
+              {booking.trip.bus.ownerPhone && <p><span className="font-medium">Bus Owner Phone:</span> {booking.trip.bus.ownerPhone}</p>}
+            </div>
             {booking.status === "CONFIRMED" && <a href={`/support?bookingId=${booking.id}`} className="text-sm text-brand-700 font-medium">{hindi ? "रद्द करने का अनुरोध" : "Request cancellation"}</a>}
           </div>
         ))}

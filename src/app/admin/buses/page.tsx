@@ -10,6 +10,9 @@ type Bus = {
   operator: string;
   upiId?: string | null;
   paymentQrUrl?: string | null;
+  ownerPhone?: string | null;
+  pickupLocation?: string | null;
+  dropLocation?: string | null;
 };
 
 export default function AdminBusesPage() {
@@ -20,6 +23,9 @@ export default function AdminBusesPage() {
     totalSeats: 40,
     upiId: "",
     paymentQrUrl: "",
+    ownerPhone: "",
+    pickupLocation: "",
+    dropLocation: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -48,7 +54,7 @@ export default function AdminBusesPage() {
       setError(data.error?.formErrors?.join(", ") || "Failed to add bus");
       return;
     }
-    setForm({ busNumber: "", type: "AC_SEATER", totalSeats: 40, upiId: "", paymentQrUrl: "" });
+    setForm({ busNumber: "", type: "AC_SEATER", totalSeats: 40, upiId: "", paymentQrUrl: "", ownerPhone: "", pickupLocation: "", dropLocation: "" });
     loadBuses();
   }
 
@@ -56,7 +62,7 @@ export default function AdminBusesPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Manage Buses</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
         <input
           placeholder="Bus number (e.g. RJ-101)"
           value={form.busNumber}
@@ -95,7 +101,25 @@ export default function AdminBusesPage() {
           onChange={(e) => setForm({ ...form, paymentQrUrl: e.target.value })}
           className="border rounded-lg px-3 py-2"
         />
-        <button disabled={loading} className="lg:col-span-5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2">
+        <input
+          placeholder="Owner phone number"
+          value={form.ownerPhone}
+          onChange={(e) => setForm({ ...form, ownerPhone: e.target.value })}
+          className="border rounded-lg px-3 py-2"
+        />
+        <input
+          placeholder="Pickup location"
+          value={form.pickupLocation}
+          onChange={(e) => setForm({ ...form, pickupLocation: e.target.value })}
+          className="border rounded-lg px-3 py-2"
+        />
+        <input
+          placeholder="Drop location"
+          value={form.dropLocation}
+          onChange={(e) => setForm({ ...form, dropLocation: e.target.value })}
+          className="border rounded-lg px-3 py-2"
+        />
+        <button disabled={loading} className="lg:col-span-3 bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2">
           {loading ? "Adding..." : "Add Bus"}
         </button>
       </form>
@@ -104,7 +128,7 @@ export default function AdminBusesPage() {
 
       <div className="bg-white rounded-xl shadow divide-y">
         {buses.map((b) => (
-          <div key={b.id} className="p-4 grid md:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-center">
+          <div key={b.id} className="p-4 grid md:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-start">
             <span className="font-medium">{b.busNumber}</span>
             <span className="text-gray-500">{b.type.replace(/_/g, " ")}</span>
             <span className="text-gray-500">{b.totalSeats} seats</span>
@@ -113,6 +137,11 @@ export default function AdminBusesPage() {
               {b.paymentQrUrl && (
                 <img src={b.paymentQrUrl} alt={`${b.busNumber} payment QR`} className="h-16 w-16 object-cover rounded border mt-1 ml-auto" />
               )}
+            </div>
+            <div className="md:col-span-3 text-sm text-gray-600 space-y-1">
+              {b.ownerPhone && <div>Owner: {b.ownerPhone}</div>}
+              {b.pickupLocation && <div>Pickup: {b.pickupLocation}</div>}
+              {b.dropLocation && <div>Drop: {b.dropLocation}</div>}
             </div>
           </div>
         ))}

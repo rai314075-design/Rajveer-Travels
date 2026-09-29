@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@auth0/nextjs-auth0";
+import { getCustomSession } from "@/lib/session";
 
 export default async function SearchPage({
   searchParams,
@@ -7,18 +7,12 @@ export default async function SearchPage({
   searchParams: { source?: string; destination?: string; date?: string };
 }) {
   const { source, destination, date } = searchParams;
-  const session = await getSession();
-  const user = session?.user?.sub
-    ? await prisma.user.findUnique({
-        where: { auth0Id: session.user.sub },
-        select: { phoneVerified: true, emailVerified: true },
-      })
-    : null;
-  const language = session?.user?.sub
-    ? (await prisma.user.findUnique({ where: { auth0Id: session.user.sub }, select: { language: true } }))?.language
-    : "ENGLISH";
+  const user = await getCustomSession();
+  const language = user?.language || "ENGLISH";
   const hindi = language === "HINDI";
   const canBook = Boolean(user?.phoneVerified && user?.emailVerified);
+
+  const now = new Date();
 
   const trips = await prisma.trip.findMany({
     where: {
@@ -31,6 +25,9 @@ export default async function SearchPage({
       route: {
         ...(source && { source: { equals: source, mode: "insensitive" } }),
         ...(destination && { destination: { equals: destination, mode: "insensitive" } }),
+      },
+      departureTime: {
+        gt: now,
       },
     },
     include: { bus: true, route: true },

@@ -6,13 +6,26 @@ type BookingAlert = {
   customerEmail: string;
   customerPhone: string | null;
   busNumber: string;
+  busOwnerPhone: string | null;
+  pickupLocation: string | null;
+  dropLocation: string | null;
   departureTime: Date;
   source: string;
   destination: string;
 };
 
 function messageFor(alert: BookingAlert) {
-  return [`New booking ${alert.bookingId}`, `Customer: ${alert.customerName}`, `Customer phone: ${alert.customerPhone || "Not provided"}`, `Bus: ${alert.busNumber}`, `Time: ${alert.departureTime.toLocaleString()}`, `Route: ${alert.source} to ${alert.destination}`].join("\n");
+  const lines = [
+    `New booking ${alert.bookingId}`,
+    `Customer: ${alert.customerName}`,
+    `Customer phone: ${alert.customerPhone || "Not provided"}`,
+    `Bus: ${alert.busNumber}`,
+  ];
+  if (alert.busOwnerPhone) lines.push(`Bus Owner: ${alert.busOwnerPhone}`);
+  if (alert.pickupLocation) lines.push(`Pickup: ${alert.pickupLocation}`);
+  if (alert.dropLocation) lines.push(`Drop: ${alert.dropLocation}`);
+  lines.push(`Time: ${alert.departureTime.toLocaleString()}`, `Route: ${alert.source} to ${alert.destination}`);
+  return lines.join("\n");
 }
 
 async function sendEmail(to: string, body: string) {

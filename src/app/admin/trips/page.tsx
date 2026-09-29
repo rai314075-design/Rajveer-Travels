@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-type Bus = { id: string; busNumber: string };
-type RouteRow = { id: string; source: string; destination: string };
+type Bus = { id: string; busNumber: string; ownerPhone?: string | null; pickupLocation?: string | null; dropLocation?: string | null };
+type RouteRow = { id: string; source: string; destination: string; pickupPoint?: string | null; dropPoint?: string | null };
 type Trip = {
   id: string;
   travelDate: string;

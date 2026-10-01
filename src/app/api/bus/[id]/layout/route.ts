@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import { connectMongo } from "@/lib/mongodb";
 import Bus from "@/models/Bus";
 import BusLayout from "@/models/BusLayout";
+export const dynamic = "force-dynamic";
+
 
 export async function GET(
   _req: NextRequest,

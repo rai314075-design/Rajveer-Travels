@@ -5,6 +5,8 @@ import { getCustomSession } from "@/lib/session";
 import { sendBookingCreatedAlerts } from "@/lib/adminNotifications";
 import { z } from "zod";
 
+export const dynamic = "force-dynamic";
+
 const createBookingSchema = z.object({
   tripId: z.string(),
   seatTemplateIds: z.array(z.string()).min(1).max(6),

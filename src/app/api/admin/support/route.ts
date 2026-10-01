@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendRefundEmail } from "@/lib/adminNotifications";
 import { z } from "zod";
+export const dynamic = "force-dynamic";
+
 
 async function adminUser() {
   const session = await getSession();

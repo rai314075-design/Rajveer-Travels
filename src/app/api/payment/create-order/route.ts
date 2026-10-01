@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@auth0/nextjs-auth0";
+export const dynamic = "force-dynamic";
+
 
 // Manual UPI QR payment flow: the bus owner provides UPI/QR details at the bus level.
 export async function POST(req: NextRequest) {

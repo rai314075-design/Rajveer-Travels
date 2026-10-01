@@ -1,6 +1,8 @@
 import { handleAuth, handleCallback, handleLogin } from "@auth0/nextjs-auth0";
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+export const dynamic = "force-dynamic";
+
 
 // Wraps the Auth0 callback so a matching User row is created in Postgres
 // the first time someone logs in (auth0Id, email, name synced from the Auth0 profile).

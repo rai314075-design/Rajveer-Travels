@@ -2,6 +2,8 @@ import { getSession } from "@auth0/nextjs-auth0";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+export const dynamic = "force-dynamic";
+
 
 const schema = z.object({ channel: z.enum(["EMAIL", "SMS"]) });
 

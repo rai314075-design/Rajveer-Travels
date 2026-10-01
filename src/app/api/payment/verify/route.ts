@@ -4,6 +4,8 @@ import { connectMongo } from "@/lib/mongodb";
 import Notification from "@/models/Notification";
 import { sendAdminBookingAlerts } from "@/lib/adminNotifications";
 import { getSession } from "@auth0/nextjs-auth0";
+export const dynamic = "force-dynamic";
+
 
 // Manual UPI QR confirmation flow. The user pays via bus owner details, then confirms payment.
 export async function POST(req: NextRequest) {

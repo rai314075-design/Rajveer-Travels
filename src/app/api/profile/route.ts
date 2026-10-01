@@ -2,6 +2,8 @@ import { getSession } from "@auth0/nextjs-auth0";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+export const dynamic = "force-dynamic";
+
 
 const profileSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),

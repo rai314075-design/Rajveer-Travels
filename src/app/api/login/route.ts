@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
+
 
 export async function POST(req: NextRequest) {
   const isJson = req.headers.get("content-type")?.includes("application/json") ?? false;

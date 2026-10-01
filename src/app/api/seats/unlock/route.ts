@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@auth0/nextjs-auth0";
 import { z } from "zod";
+export const dynamic = "force-dynamic";
+
 
 const unlockSchema = z.object({
   tripId: z.string(),

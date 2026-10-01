@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyAdminsByEmailAndSms } from "@/lib/adminNotifications";
 import { z } from "zod";
+export const dynamic = "force-dynamic";
+
 
 const schema = z.object({ bookingId: z.string().min(1), upiId: z.string().trim().min(3).max(255) });
 

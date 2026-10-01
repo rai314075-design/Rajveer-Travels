@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@auth0/nextjs-auth0";
 import { z } from "zod";
 import type { Deck, SeatType, ReservationStatus } from "@/types/seat";
+export const dynamic = "force-dynamic";
+
 
 const statusSchema = z.object({
   tripId: z.string(),

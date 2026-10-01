@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { getCustomSession } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 const LOCK_DURATION_MINUTES = 10;
 
 const lockSchema = z.object({

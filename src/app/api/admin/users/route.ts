@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireSuperAdmin } from "@/lib/requireAdmin";
 import { z } from "zod";
+export const dynamic = "force-dynamic";
+
 
 const promoteSchema = z.object({ email: z.string().email() });
 

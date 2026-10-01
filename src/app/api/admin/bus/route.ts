@@ -6,6 +6,8 @@ import { connectMongo } from "@/lib/mongodb";
 import Bus from "@/models/Bus";
 import BusLayout from "@/models/BusLayout";
 
+export const dynamic = "force-dynamic";
+
 const seatSchema = z.object({
   seatNo: z.string().trim().min(1).max(12),
   row: z.number().int().min(0).max(19),

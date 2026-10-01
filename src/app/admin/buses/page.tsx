@@ -8,6 +8,7 @@ type Bus = {
   type: string;
   totalSeats: number;
   operator: string;
+  description?: string | null;
   upiId?: string | null;
   paymentQrUrl?: string | null;
   ownerPhone?: string | null;
@@ -21,6 +22,7 @@ export default function AdminBusesPage() {
     busNumber: "",
     type: "AC_SEATER",
     totalSeats: 40,
+    description: "",
     upiId: "",
     paymentQrUrl: "",
     ownerPhone: "",
@@ -28,6 +30,7 @@ export default function AdminBusesPage() {
     dropLocation: "",
   });
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function loadBuses() {
@@ -54,13 +57,34 @@ export default function AdminBusesPage() {
       setError(data.error?.formErrors?.join(", ") || "Failed to add bus");
       return;
     }
-    setForm({ busNumber: "", type: "AC_SEATER", totalSeats: 40, upiId: "", paymentQrUrl: "", ownerPhone: "", pickupLocation: "", dropLocation: "" });
+    setForm({ busNumber: "", type: "AC_SEATER", totalSeats: 40, description: "", upiId: "", paymentQrUrl: "", ownerPhone: "", pickupLocation: "", dropLocation: "" });
     loadBuses();
+  }
+
+  async function handleDelete(bus: Bus) {
+    if (!window.confirm(`Remove ${bus.busNumber} from the bus listing?`)) return;
+
+    setDeletingId(bus.id);
+    setError("");
+    const res = await fetch(`/api/admin/buses?id=${encodeURIComponent(bus.id)}`, { method: "DELETE" });
+    setDeletingId(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || "Failed to remove bus");
+      return;
+    }
+    setBuses((current) => current.filter((item) => item.id !== bus.id));
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Manage Buses</h1>
+      <div className="flex flex-col gap-1 mb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">Fleet operations</p>
+          <h1 className="text-3xl font-bold text-gray-950">Manage buses</h1>
+        </div>
+        <p className="text-sm text-gray-500">Add vehicles here, then configure their seats in Layout Builder.</p>
+      </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
         <input
@@ -88,6 +112,14 @@ export default function AdminBusesPage() {
           onChange={(e) => setForm({ ...form, totalSeats: Number(e.target.value) })}
           required
           className="border rounded-lg px-3 py-2"
+        />
+        <textarea
+          placeholder="Bus description (amenities, comfort, onboard services)"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          maxLength={1000}
+          rows={2}
+          className="border rounded-lg px-3 py-2 sm:col-span-2 lg:col-span-3"
         />
         <input
           placeholder="UPI ID (name@upi)"
@@ -128,20 +160,34 @@ export default function AdminBusesPage() {
 
       <div className="bg-white rounded-xl shadow divide-y">
         {buses.map((b) => (
-          <div key={b.id} className="p-4 grid md:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-start">
-            <span className="font-medium">{b.busNumber}</span>
-            <span className="text-gray-500">{b.type.replace(/_/g, " ")}</span>
-            <span className="text-gray-500">{b.totalSeats} seats</span>
-            <div className="text-right">
+          <div key={b.id} className="p-4 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] items-start">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-gray-950">{b.busNumber}</span>
+                <span className="rounded-full bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700">{b.type.replace(/_/g, " ")}</span>
+                <span className="text-sm text-gray-500">{b.totalSeats} seats</span>
+              </div>
+              <div className="mt-2 text-sm text-gray-600 space-y-1">
+                {b.description && <p className="max-w-2xl text-gray-700">{b.description}</p>}
+                {b.ownerPhone && <div>Owner: {b.ownerPhone}</div>}
+                {(b.pickupLocation || b.dropLocation) && <div>{b.pickupLocation || "Any pickup"} → {b.dropLocation || "Any drop"}</div>}
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="text-right">
               {b.upiId && <div className="text-sm text-brand-700">UPI: {b.upiId}</div>}
               {b.paymentQrUrl && (
                 <img src={b.paymentQrUrl} alt={`${b.busNumber} payment QR`} className="h-16 w-16 object-cover rounded border mt-1 ml-auto" />
               )}
-            </div>
-            <div className="md:col-span-3 text-sm text-gray-600 space-y-1">
-              {b.ownerPhone && <div>Owner: {b.ownerPhone}</div>}
-              {b.pickupLocation && <div>Pickup: {b.pickupLocation}</div>}
-              {b.dropLocation && <div>Drop: {b.dropLocation}</div>}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDelete(b)}
+                disabled={deletingId === b.id}
+                className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                {deletingId === b.id ? "Removing..." : "Remove"}
+              </button>
             </div>
           </div>
         ))}

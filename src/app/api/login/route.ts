@@ -3,26 +3,34 @@ import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  const isJson = req.headers.get("content-type")?.includes("application/json") ?? false;
+  const body = isJson
+    ? await req.json()
+    : Object.fromEntries((await req.formData()).entries());
   const { email, password } = body as { email: string; password: string };
 
   if (!email || !password) {
+    if (!isJson) return NextResponse.redirect(new URL("/login?error=missing_fields", req.url));
     return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.password) {
+    if (!isJson) return NextResponse.redirect(new URL("/login?error=invalid_credentials", req.url));
     return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
   }
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) {
+    if (!isJson) return NextResponse.redirect(new URL("/login?error=invalid_credentials", req.url));
     return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
   }
 
   // Create a simple session cookie
   const sessionToken = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");
-  const response = NextResponse.json({ user: { id: user.id, name: user.name, email: user.email } });
+  const response = isJson
+    ? NextResponse.json({ user: { id: user.id, name: user.name, email: user.email } })
+    : NextResponse.redirect(new URL("/", req.url));
   response.cookies.set("session_token", sessionToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

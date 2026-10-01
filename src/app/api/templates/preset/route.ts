@@ -61,8 +61,7 @@ interface Preset {
  * - Lower deck: seats 1A, 1B, 2A, 2B, ... (x: 0..2 pairs)
  * - Upper deck: beds A, B, C, ... (x: 0..2 triples)
  *
- * We place lower-berth seats at x=0, x=1 (two seats side by side)
- * and upper bunk at x=0, x=1, x=2 in a single row.
+ * The grid uses five columns: two seats, an aisle, then two seats.
  */
 function generate2Plus1Sleeper() {
   const seats: Preset["seats"] = [];
@@ -76,7 +75,7 @@ function generate2Plus1Sleeper() {
       type: "SLEEPER",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 2,
+      xPosition: 0,
       yPosition: row,
     });
     seats.push({
@@ -85,19 +84,19 @@ function generate2Plus1Sleeper() {
       type: "SLEEPER",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 2 + 1,
+      xPosition: 1,
       yPosition: row,
     });
 
-    // Upper deck — 1 bunk per row (spanning both lower seats)
+    // Upper deck — one bunk on the right side of the aisle.
     seats.push({
       seatNumber: `${seatNum++}U`,
       deck: "UPPER",
       type: "SLEEPER",
       rowSpan: 1,
       colSpan: 2,
-      xPosition: row * 2,
-      yPosition: row + 5, // offset vertically in the upper deck
+      xPosition: 3,
+      yPosition: row,
     });
   }
 
@@ -119,7 +118,7 @@ function generate2Plus2Seater() {
       type: "SEAT",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 2,
+      xPosition: 0,
       yPosition: row,
     });
     seats.push({
@@ -128,18 +127,18 @@ function generate2Plus2Seater() {
       type: "SEAT",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 2 + 1,
+      xPosition: 1,
       yPosition: row,
     });
 
-    // Right side
+    // Right side, with column 2 reserved for the aisle.
     seats.push({
       seatNumber: `${seatNum++}C`,
       deck: "LOWER",
       type: "SEAT",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 2 + 10,
+      xPosition: 3,
       yPosition: row,
     });
     seats.push({
@@ -148,7 +147,7 @@ function generate2Plus2Seater() {
       type: "SEAT",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 2 + 11,
+      xPosition: 4,
       yPosition: row,
     });
   }
@@ -171,7 +170,7 @@ function generate3Plus1Sleeper() {
       type: "SLEEPER",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 3,
+      xPosition: 0,
       yPosition: row,
     });
     seats.push({
@@ -180,7 +179,7 @@ function generate3Plus1Sleeper() {
       type: "SLEEPER",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 3 + 1,
+      xPosition: 1,
       yPosition: row,
     });
     seats.push({
@@ -189,18 +188,18 @@ function generate3Plus1Sleeper() {
       type: "SLEEPER",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 3 + 2,
+      xPosition: 2,
       yPosition: row,
     });
 
-    // One upper bunk on the other side
+    // One upper bunk on the other side of the aisle.
     seats.push({
       seatNumber: `${seatNum++}U`,
       deck: "UPPER",
       type: "SLEEPER",
       rowSpan: 1,
       colSpan: 1,
-      xPosition: row * 3 + 15,
+      xPosition: 4,
       yPosition: row,
     });
   }

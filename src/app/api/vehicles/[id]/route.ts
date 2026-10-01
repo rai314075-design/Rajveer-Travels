@@ -70,8 +70,9 @@ export async function DELETE(
   if (!guard.ok)
     return NextResponse.json({ error: guard.message }, { status: guard.status });
 
-  await prisma.vehicle.delete({
+  await prisma.vehicle.update({
     where: { id: params.id },
+    data: { isActive: false },
   });
 
   return NextResponse.json({ success: true });

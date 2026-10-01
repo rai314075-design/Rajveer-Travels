@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@auth0/nextjs-auth0";
 import { z } from "zod";
+import { getCustomSession } from "@/lib/session";
 
 const LOCK_DURATION_MINUTES = 10;
 
@@ -24,13 +24,13 @@ const lockSchema = z.object({
  */
 export async function POST(req: NextRequest) {
   // Authenticate — only logged-in users can hold locks
-  const session = await getSession();
-  if (!session?.user?.sub) {
+  const sessionUser = await getCustomSession();
+  if (!sessionUser) {
     return NextResponse.json({ error: "Log in to lock seats" }, { status: 401 });
   }
 
   const dbUser = await prisma.user.findUnique({
-    where: { auth0Id: session.user.sub },
+    where: { id: sessionUser.id },
     select: { id: true, role: true },
   });
   if (!dbUser) {
@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
       },
       select: {
         id: true,
+        seatTemplateId: true,
         status: true,
         bookingId: true,
       },

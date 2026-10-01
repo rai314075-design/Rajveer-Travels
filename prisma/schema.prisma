@@ -108,6 +108,8 @@ model Bus {
   busNumber         String   @unique
   type              BusType
   totalSeats        Int
+  description       String?
+  isActive          Boolean  @default(true)
   amenities         String[] @default([])
   upiId             String?
   paymentQrUrl      String?
@@ -126,6 +128,7 @@ model Route {
   dropPoint     String?
   distanceKm    Int
   durationMins  Int
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   trips         Trip[]
 
@@ -142,6 +145,7 @@ model Trip {
   arrivalTime    DateTime
   travelDate     DateTime
   fare           Decimal   @db.Decimal(10, 2)
+  isActive      Boolean   @default(true)
   createdAt      DateTime  @default(now())
   seats          Seat[]
   bookings       Booking[]
@@ -227,6 +231,7 @@ model Vehicle {
   id          String   @id @default(cuid())
   name        String
   totalDecks  Int
+  isActive    Boolean  @default(true)
   seatTemplates SeatTemplate[]
   trips       Trip[]
 }

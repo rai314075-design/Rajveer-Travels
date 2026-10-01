@@ -13,7 +13,7 @@ const routeSchema = z.object({
 });
 
 export async function GET() {
-  const routes = await prisma.route.findMany({ orderBy: { createdAt: "desc" } });
+  const routes = await prisma.route.findMany({ where: { isActive: true }, orderBy: { createdAt: "desc" } });
   return NextResponse.json(routes);
 }
 
@@ -35,4 +35,18 @@ export async function POST(req: NextRequest) {
     },
   });
   return NextResponse.json(route, { status: 201 });
+}
+
+export async function DELETE(req: NextRequest) {
+  const guard = await requireAdmin(req);
+  if (!guard.ok) return NextResponse.json({ error: guard.message }, { status: guard.status });
+
+  const routeId = new URL(req.url).searchParams.get("id");
+  if (!routeId) return NextResponse.json({ error: "Route id is required" }, { status: 400 });
+
+  const route = await prisma.route.findUnique({ where: { id: routeId }, select: { id: true } });
+  if (!route) return NextResponse.json({ error: "Route not found" }, { status: 404 });
+
+  await prisma.route.update({ where: { id: routeId }, data: { isActive: false } });
+  return NextResponse.json({ success: true });
 }

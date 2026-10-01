@@ -37,6 +37,9 @@ export const GET = handleAuth({
   },
   login: (req: NextRequest, ctx: any) => {
     const method = req.nextUrl.searchParams.get("method");
+    const returnTo = method === "google"
+      ? "/"
+      : req.nextUrl.searchParams.get("returnTo") || "/";
     const connection = method === "google"
       ? process.env.AUTH0_GOOGLE_CONNECTION
       : method === "phone"
@@ -44,6 +47,7 @@ export const GET = handleAuth({
         : undefined;
 
     return handleLogin(req, ctx, {
+      returnTo,
       authorizationParams: {
         audience: process.env.AUTH0_AUDIENCE,
         ...(connection ? { connection } : {}),

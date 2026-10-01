@@ -37,9 +37,15 @@ export function Seat({ seat, state, onClick }: SeatProps) {
         relative flex items-center justify-center cursor-pointer
         rounded border-2 transition-all
         ${getSeatColor()}
+        ${state === "selected" ? "shadow-[0_0_0_3px_rgba(37,99,235,0.45)]" : ""}
         hover:scale-105
         disabled:cursor-not-allowed disabled:opacity-50
       `}
+      style={{
+        gridColumn: `${seat.xPosition + 1} / span ${seat.colSpan}`,
+        gridRow: `${seat.yPosition + 1} / span ${seat.rowSpan}`,
+        minHeight: seat.type === "SLEEPER" ? "56px" : "48px",
+      }}
       disabled={state === "booked" || state === "locked"}
       title={`${seat.seatNumber} - ${state}`}
     >

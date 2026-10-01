@@ -1,6 +1,14 @@
 import mongoose from "mongoose";
+import dns from "dns";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+dns.promises.setServers(["8.8.8.8", "8.8.4.4"]);
+
+const rawMongoUri = process.env.MONGODB_URI;
+const MONGODB_URI = rawMongoUri?.replace(
+  /^(mongodb(?:\+srv)?:\/\/[^/]+)\/{2,}/,
+  "$1/"
+) || "";
 
 if (!MONGODB_URI) {
   throw new Error("Please define MONGODB_URI in your .env file");

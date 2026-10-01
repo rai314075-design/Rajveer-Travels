@@ -16,6 +16,7 @@ export default function AdminRoutesPage() {
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [form, setForm] = useState({ source: "", destination: "", pickupPoint: "", dropPoint: "", distanceKm: 0, durationMins: 0 });
   const [loading, setLoading] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function loadRoutes() {
@@ -50,9 +51,24 @@ export default function AdminRoutesPage() {
     loadRoutes();
   }
 
+  async function handleRemove(route: RouteRow) {
+    if (!window.confirm(`Remove ${route.source} to ${route.destination} from active routes?`)) return;
+    setRemovingId(route.id);
+    setError("");
+    const res = await fetch(`/api/admin/routes?id=${encodeURIComponent(route.id)}`, { method: "DELETE" });
+    setRemovingId(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || "Failed to remove route");
+      return;
+    }
+    setRoutes((current) => current.filter((item) => item.id !== route.id));
+  }
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Manage Routes</h1>
+      <h1 className="text-2xl font-bold mb-2">Manage Routes</h1>
+      <p className="mb-6 max-w-2xl rounded-lg bg-blue-50 p-3 text-sm text-blue-900">Routes are shared route definitions. To assign a route to your bus, open <a href="/admin/trips" className="font-semibold underline">Schedule Trips</a> and choose both the bus and this route.</p>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-4 grid sm:grid-cols-6 gap-3 mb-8">
         <input placeholder="Source city" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} required className="border rounded-lg px-3 py-2" />
@@ -79,9 +95,12 @@ export default function AdminRoutesPage() {
                 {r.dropPoint ? `Drop: ${r.dropPoint}` : "Drop: default route end"}
               </div>
             </div>
-            <div className="flex gap-4 text-gray-500">
+            <div className="flex items-center gap-4 text-gray-500">
               <span>{r.distanceKm} km</span>
               <span>{r.durationMins} mins</span>
+              <button type="button" onClick={() => handleRemove(r)} disabled={removingId === r.id} className="rounded-lg border border-red-200 px-3 py-1 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50">
+                {removingId === r.id ? "Removing..." : "Remove"}
+              </button>
             </div>
           </div>
         ))}

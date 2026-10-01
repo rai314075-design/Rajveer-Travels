@@ -7,6 +7,7 @@ const busSchema = z.object({
   busNumber: z.string().min(2),
   type: z.enum(["AC_SEATER", "AC_SLEEPER", "NON_AC_SEATER", "NON_AC_SLEEPER"]),
   totalSeats: z.number().int().positive(),
+  description: z.string().trim().max(1000).optional().or(z.literal("")),
   amenities: z.array(z.string()).optional(),
   upiId: z.string().trim().max(255).optional().or(z.literal("")),
   paymentQrUrl: z.string().trim().max(2048).optional().or(z.literal("")),
@@ -16,7 +17,10 @@ const busSchema = z.object({
 });
 
 export async function GET() {
-  const buses = await prisma.bus.findMany({ orderBy: { createdAt: "desc" } });
+  const buses = await prisma.bus.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "desc" },
+  });
   return NextResponse.json(buses);
 }
 
@@ -32,6 +36,7 @@ export async function POST(req: NextRequest) {
 
   const normalizedData = {
     ...parsed.data,
+    description: parsed.data.description?.trim() || null,
     upiId: parsed.data.upiId?.trim() || null,
     paymentQrUrl: parsed.data.paymentQrUrl?.trim() || null,
     ownerPhone: parsed.data.ownerPhone?.trim() || null,
@@ -41,4 +46,22 @@ export async function POST(req: NextRequest) {
 
   const bus = await prisma.bus.create({ data: normalizedData });
   return NextResponse.json(bus, { status: 201 });
+}
+
+export async function DELETE(req: NextRequest) {
+  const guard = await requireAdmin(req);
+  if (!guard.ok) return NextResponse.json({ error: guard.message }, { status: guard.status });
+
+  const { searchParams } = new URL(req.url);
+  const busId = searchParams.get("id");
+  if (!busId) return NextResponse.json({ error: "Bus id is required" }, { status: 400 });
+
+  const bus = await prisma.bus.findUnique({
+    where: { id: busId },
+    select: { id: true, busNumber: true, isActive: true },
+  });
+  if (!bus) return NextResponse.json({ error: "Bus not found" }, { status: 404 });
+
+  await prisma.bus.update({ where: { id: busId }, data: { isActive: false } });
+  return NextResponse.json({ success: true });
 }

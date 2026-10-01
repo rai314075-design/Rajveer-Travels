@@ -20,11 +20,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body>
-        <header className="w-full min-h-20 bg-brand-700 text-white px-4 py-4 sm:px-8 sm:py-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <a href="/" className="text-lg sm:text-xl font-bold tracking-tight">
+        <header className="flex min-h-20 w-full flex-col gap-3 bg-brand-700 px-4 py-4 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5">
+          <a href="/" className="text-center text-lg font-bold tracking-tight sm:text-left sm:text-xl">
             Rajveer Travels
           </a>
-          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs sm:gap-6 sm:text-sm">
+          <nav className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs sm:gap-6 sm:text-sm">
             <a href="/search" className="text-white font-bold hover:text-purple-200">{user?.language === "HINDI" ? "बस बुक करें" : "Book a Bus"}</a>
             {sessionUser ? (
               <>

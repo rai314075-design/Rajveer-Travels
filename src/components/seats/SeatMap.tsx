@@ -126,31 +126,15 @@ export function SeatMap({
   const lowerDeck = seats.filter((s) => s.deck === "LOWER");
   const upperDeck = seats.filter((s) => s.deck === "UPPER");
 
-  // Find grid dimensions
-  const maxX = Math.max(
-    ...seats.map((s) => s.xPosition + s.colSpan),
-    0
-  );
-  const maxY = Math.max(
-    ...seats.map((s) => s.yPosition + s.rowSpan),
-    0
-  );
+  const activeSeats = activeDeck === "LOWER" ? lowerDeck : upperDeck;
+  const maxX = Math.max(...activeSeats.map((s) => s.xPosition + s.colSpan), 5);
+  const maxY = Math.max(...activeSeats.map((s) => s.yPosition + s.rowSpan), 1);
 
   return (
     <div className="bg-white rounded-xl shadow p-6 space-y-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold">Select Your Seats</h2>
-        <button
-          onClick={lockSelectedSeats}
-          disabled={selectedSeats.length === 0 || loading}
-          className={`px-4 py-2 rounded-lg font-medium disabled:opacity-50 ${
-            selectedSeats.length > 0
-              ? "bg-brand-600 hover:bg-brand-700 text-white"
-              : "bg-gray-300 text-gray-500"
-          }`}
-        >
-          {selectedSeats.length > 0 ? `Proceed (${selectedSeats.length})` : "Select seats"}
-        </button>
+        <span className="text-sm text-gray-500">{selectedSeats.length ? `${selectedSeats.length} selected` : "Click a seat to select it"}</span>
       </div>
 
       <SeatLegend />
@@ -183,13 +167,13 @@ export function SeatMap({
 
       {/* Seat Grid */}
       <div
-        className="border rounded-lg bg-gray-50 p-4"
+        className="mx-auto max-w-2xl rounded-2xl border-4 border-gray-300 bg-white p-4 shadow-inner"
         style={{
           display: "grid",
-          gridTemplateColumns: `repeat(${maxX}, 1fr)`,
+          gridTemplateColumns: `repeat(${maxX}, minmax(0, 1fr))`,
           gridTemplateRows: `repeat(${maxY}, 1fr)`,
-          minHeight: "400px",
-          gap: "1px",
+          minHeight: "420px",
+          gap: "8px",
         }}
       >
         {/* Grid background */}
@@ -197,18 +181,18 @@ export function SeatMap({
           [...Array(maxX)].map((_, colIdx) => (
             <div
               key={`${rowIdx}-${colIdx}`}
-              className="border border-gray-200"
+              className={colIdx === 2 ? "rounded bg-gray-100" : "rounded border border-dashed border-gray-200 bg-gray-50"}
               style={{
                 gridColumn: colIdx + 1,
                 gridRow: rowIdx + 1,
-                minHeight: "40px",
+                minHeight: "48px",
               }}
             />
           ))
         )}
 
         {/* Seats */}
-        {(activeDeck === "LOWER" ? lowerDeck : upperDeck).map((seat) => (
+        {activeSeats.map((seat) => (
           <Seat
             key={seat.seatTemplateId}
             seat={seat}

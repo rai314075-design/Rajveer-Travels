@@ -14,11 +14,17 @@ type BookingAlert = {
   destination: string;
 };
 
+export type NewBookingAlert = BookingAlert & {
+  customerName: string;
+  customerEmail: string;
+};
+
 function messageFor(alert: BookingAlert) {
   const lines = [
     `New booking ${alert.bookingId}`,
     `Customer: ${alert.customerName}`,
     `Customer phone: ${alert.customerPhone || "Not provided"}`,
+    `Call the customer for further information: ${alert.customerPhone || "Phone number not provided"}`,
     `Bus: ${alert.busNumber}`,
   ];
   if (alert.busOwnerPhone) lines.push(`Bus Owner: ${alert.busOwnerPhone}`);
@@ -78,4 +84,26 @@ export async function sendRefundEmail(to: string, customerName: string, amount: 
     to,
     `Dear ${customerName},\n\nWe are sorry for the inconvenience. ${message}\n\nRefund amount: INR ${amount}\n\nRajveer Travels`,
   );
+}
+
+export async function sendBookingCreatedAlerts(alert: NewBookingAlert) {
+  const body = messageFor(alert);
+  const admins = await prisma.user.findMany({
+    where: { role: "ADMIN", notificationChannel: { not: null } },
+    select: { id: true, email: true, phone: true, notificationChannel: true },
+  });
+
+  await Promise.all([
+    ...admins.map(async (admin) => {
+      const delivered = admin.notificationChannel === "EMAIL"
+        ? await sendEmail(admin.email, body)
+        : Boolean(admin.phone) && await sendSms(admin.phone as string, body);
+      if (!delivered) console.warn(`Booking alert was not delivered to admin ${admin.id}.`);
+    }),
+    alert.busOwnerPhone
+      ? sendSms(alert.busOwnerPhone, `New ticket booked for ${alert.busNumber}\n${body}`).then((delivered) => {
+          if (!delivered) console.warn(`Booking alert was not delivered to bus owner for ${alert.busNumber}.`);
+        })
+      : Promise.resolve(),
+  ]);
 }

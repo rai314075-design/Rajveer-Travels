@@ -5,12 +5,12 @@ import type {
   SeatTemplate,
   Deck,
   SeatType,
-  Preset,
+  PresetLayout,
 } from "@/types/seat";
 
 interface LayoutBuilderProps {
   vehicleId: string;
-  preset?: Preset;
+  preset?: PresetLayout;
 }
 
 /**
@@ -70,13 +70,14 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
 
   // --- Grid dimension computation ---------------------------------------
   // Determine the CSS grid size based on the seat positions.
-  const maxX = seatTemplates.reduce(
-    (max, s) => Math.max(max, s.xPosition + s.colSpan),
-    0
+  const activeSeats = seatTemplates.filter((s) => s.deck === activeDeck);
+  const maxX = Math.max(
+    ...activeSeats.map((s) => s.xPosition + s.colSpan),
+    5
   );
-  const maxY = seatTemplates.reduce(
-    (max, s) => Math.max(max, s.yPosition + s.rowSpan),
-    0
+  const maxY = Math.max(
+    ...activeSeats.map((s) => s.yPosition + s.rowSpan),
+    1
   );
 
   const gridCols = Math.max(maxX, 10);
@@ -84,7 +85,7 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
 
   // --- Actions ----------------------------------------------------------
 
-  const applyPreset = useCallback(async (p: Preset) => {
+  const applyPreset = useCallback(async (p: PresetLayout) => {
     // Clear existing templates on server first
     const templates = await (await fetch(`/api/templates?vehicleId=${vehicleId}`)).json();
     for (const template of templates) {
@@ -234,6 +235,7 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
               required
               className="border rounded-lg px-3 py-2 w-full"
             />
+            <p className="-mt-2 text-xs text-gray-500">Use a unique label such as 1A, 1B, or 1U.</p>
 
             <select
               value={form.deck}
@@ -281,6 +283,7 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
                 className="border rounded-lg px-3 py-2"
               />
             </div>
+            <p className="-mt-2 text-xs text-gray-500">Position 0 starts at the front-left grid cell.</p>
 
             <div className="grid grid-cols-2 gap-2">
               <input
@@ -356,16 +359,17 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
           <h3 className="font-semibold mb-3">
             {activeDeck} Deck Preview
           </h3>
+          <p className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Front / driver</p>
 
           {/* Grid Container */}
           <div
             className="border rounded-lg bg-gray-50 p-4 relative"
             style={{
               display: "grid",
-              gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+              gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
               gridTemplateRows: `repeat(${gridRows}, 1fr)`,
-              minHeight: "400px",
-              gap: "2px",
+              minHeight: "420px",
+              gap: "8px",
             }}
           >
             {/* Grid background lines */}
@@ -373,11 +377,11 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
               [...Array(gridCols)].map((_, colIdx) => (
                 <div
                   key={`${rowIdx}-${colIdx}`}
-                  className="border border-gray-200"
+                  className={colIdx === 2 ? "rounded bg-gray-100" : "rounded border border-dashed border-gray-200 bg-gray-50"}
                   style={{
                     gridColumn: colIdx + 1,
                     gridRow: rowIdx + 1,
-                    minHeight: "40px",
+                    minHeight: "48px",
                   }}
                 />
               ))
@@ -399,7 +403,9 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
                     relative flex items-center justify-center cursor-pointer
                     rounded border-2 transition-all
                     ${
-                      seat.type === "SLEEPER"
+                      editingId === seat.id
+                        ? "bg-blue-100 border-blue-600 shadow-[0_0_0_4px_rgba(37,99,235,0.35)]"
+                        : seat.type === "SLEEPER"
                         ? "bg-amber-100 border-amber-400"
                         : "bg-blue-100 border-blue-400"
                     }

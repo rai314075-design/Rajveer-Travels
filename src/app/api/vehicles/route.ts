@@ -6,7 +6,6 @@ import { z } from "zod";
 const vehicleSchema = z.object({
   name: z.string().min(1),
   totalDecks: z.number().int().min(1).max(2),
-  busId: z.string().optional(),
 });
 
 /**
@@ -15,10 +14,11 @@ const vehicleSchema = z.object({
  */
 export async function GET() {
   const vehicles = await prisma.vehicle.findMany({
+    where: { isActive: true },
     include: {
       seatTemplates: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { id: "desc" },
   });
   return NextResponse.json(vehicles);
 }

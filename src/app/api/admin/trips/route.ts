@@ -6,6 +6,7 @@ import { z } from "zod";
 const tripSchema = z.object({
   busId: z.string(),
   routeId: z.string(),
+  vehicleId: z.string().optional(),
   travelDate: z.string(), // ISO date, e.g. "2026-10-05"
   departureTime: z.string(), // full ISO datetime
   arrivalTime: z.string(), // full ISO datetime
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
 
   const trips = await prisma.trip.findMany({
     where: {
+      isActive: true,
       ...(date && {
         travelDate: {
           gte: new Date(`${date}T00:00:00`),
@@ -61,18 +63,19 @@ export async function POST(req: NextRequest) {
   if (!bus) return NextResponse.json({ error: "Bus not found" }, { status: 404 });
 
   // Find the vehicle for this bus to get its seat templates
-  const vehicle = await prisma.vehicle.findFirst({
-    where: {
-      trips: {
-        some: {
-          busId: parsed.data.busId,
-        },
-      },
-    },
-    include: {
-      seatTemplates: true,
-    },
-  });
+  const vehicle = parsed.data.vehicleId
+    ? await prisma.vehicle.findFirst({
+        where: { id: parsed.data.vehicleId, isActive: true },
+        include: { seatTemplates: true },
+      })
+    : await prisma.vehicle.findFirst({
+        where: { isActive: true },
+        include: { seatTemplates: true },
+      });
+
+  if (parsed.data.vehicleId && !vehicle) {
+    return NextResponse.json({ error: "Vehicle layout not found" }, { status: 404 });
+  }
 
   // Create the trip and copy seat templates to Seat entities
   const trip = await prisma.trip.create({
@@ -83,6 +86,7 @@ export async function POST(req: NextRequest) {
       departureTime: new Date(parsed.data.departureTime),
       arrivalTime: new Date(parsed.data.arrivalTime),
       fare: parsed.data.fare,
+      vehicleId: vehicle?.id,
       // Copy seat templates as initial Seat entities for this trip
       seats: {
         create: vehicle?.seatTemplates?.map((template) => ({
@@ -95,4 +99,24 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(trip, { status: 201 });
+}
+
+export async function DELETE(req: NextRequest) {
+  const guard = await requireAdmin(req);
+  if (!guard.ok) return NextResponse.json({ error: guard.message }, { status: guard.status });
+
+  const tripId = new URL(req.url).searchParams.get("id");
+  if (!tripId) return NextResponse.json({ error: "Trip id is required" }, { status: 400 });
+
+  const trip = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { id: true, _count: { select: { bookings: true } } },
+  });
+  if (!trip) return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+  if (trip._count.bookings > 0) {
+    return NextResponse.json({ error: "This trip has bookings and cannot be removed." }, { status: 409 });
+  }
+
+  await prisma.trip.update({ where: { id: tripId }, data: { isActive: false } });
+  return NextResponse.json({ success: true });
 }

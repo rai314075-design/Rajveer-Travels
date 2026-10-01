@@ -6,6 +6,7 @@ export interface SessionUser {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   phoneVerified?: boolean;
   emailVerified?: boolean;
   language?: string;
@@ -22,7 +23,7 @@ export async function getCustomSession(): Promise<SessionUser | null> {
       if (userId) {
         const user = await prisma.user.findUnique({
           where: { id: userId },
-          select: { id: true, name: true, email: true, phoneVerified: true, emailVerified: true, language: true },
+          select: { id: true, name: true, email: true, phone: true, phoneVerified: true, emailVerified: true, language: true },
         });
         if (user) return user;
       }
@@ -37,7 +38,7 @@ export async function getCustomSession(): Promise<SessionUser | null> {
     if (auth0Session?.user?.sub) {
       const user = await prisma.user.findUnique({
         where: { auth0Id: auth0Session.user.sub },
-        select: { id: true, name: true, email: true, phoneVerified: true, emailVerified: true, language: true },
+        select: { id: true, name: true, email: true, phone: true, phoneVerified: true, emailVerified: true, language: true },
       });
       if (user) return user;
     }

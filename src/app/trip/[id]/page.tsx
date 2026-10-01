@@ -1,5 +1,5 @@
-import { getSession } from "@auth0/nextjs-auth0";
 import { prisma } from "@/lib/prisma";
+import { getCustomSession } from "@/lib/session";
 import { TripClient } from "./TripClient";
 import { Metadata } from "next";
 
@@ -8,6 +8,8 @@ interface TripData {
   bus: {
     operator: string;
     busNumber: string;
+    description: string | null;
+    ownerPhone: string | null;
   };
   route: {
     source: string;
@@ -63,6 +65,7 @@ export default async function TripPage({ params }: { params: { id: string } }) {
     include: {
       bus: true,
       route: true,
+      vehicle: { include: { seatTemplates: true } },
       seats: {
         select: {
           id: true,
@@ -87,21 +90,16 @@ export default async function TripPage({ params }: { params: { id: string } }) {
   }
 
   // Check auth server-side
-  const session = await getSession();
-  let userId: string | null = null;
-  if (session?.user?.sub) {
-    const user = await prisma.user.findUnique({
-      where: { auth0Id: session.user.sub },
-      select: { id: true },
-    });
-    userId = user?.id ?? null;
-  }
+  const sessionUser = await getCustomSession();
+  const userId = sessionUser?.id ?? null;
 
   const tripData: TripData = {
     id: trip.id,
     bus: {
       operator: trip.bus.operator,
       busNumber: trip.bus.busNumber,
+      description: trip.bus.description,
+      ownerPhone: trip.bus.ownerPhone,
     },
     route: {
       source: trip.route.source,
@@ -111,12 +109,19 @@ export default async function TripPage({ params }: { params: { id: string } }) {
     departureTime: formatTime(trip.departureTime),
     arrivalTime: formatTime(trip.arrivalTime),
     fare: Number(trip.fare),
-    seats: trip.seats.map((s) => ({
-      id: s.id,
-      seatNumber: s.seatNumber,
-      status: s.status,
-      seatTemplateId: s.id, // Using seat.id as templateId for now
-    })),
+    seats: trip.vehicle?.seatTemplates.length
+      ? trip.vehicle.seatTemplates.map((template) => ({
+          id: template.id,
+          seatNumber: template.seatNumber,
+          status: trip.seats.find((seat) => seat.seatNumber === template.seatNumber)?.status || "AVAILABLE",
+          seatTemplateId: template.id,
+        }))
+      : trip.seats.map((s) => ({
+          id: s.id,
+          seatNumber: s.seatNumber,
+          status: s.status,
+          seatTemplateId: s.id,
+        })),
   };
 
   return <TripClient trip={tripData} userId={userId} tripId={tripId} />;

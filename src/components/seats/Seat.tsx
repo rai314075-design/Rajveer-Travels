@@ -20,7 +20,7 @@ export function Seat({ seat, state, onClick }: SeatProps) {
       case "selected": return "bg-brand-100 border-brand-400";
       case "available": return seat.type === "SLEEPER" ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-200";
       case "locked": return "bg-yellow-100 border-yellow-300";
-      case "booked": return "bg-red-50 border-red-200";
+      case "booked": return "bg-red-600 border-red-700 text-white";
       default: return "bg-gray-50 border-gray-200";
     }
   };
@@ -63,7 +63,7 @@ export function Seat({ seat, state, onClick }: SeatProps) {
 
       {/* Booked indicator */}
       {state === "booked" && (
-        <div className="absolute bottom-0 right-0 h-2 w-2 bg-red-600 rounded-full"></div>
+        <div className="absolute bottom-1 right-1 h-2 w-2 rounded-full bg-red-950"></div>
       )}
     </button>
   );

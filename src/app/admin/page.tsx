@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import AdminBookingActions from "./AdminBookingActions";
 
 export default async function AdminDashboard() {
   const [busCount, routeCount, tripCount, bookingCount, upcomingTrips, recentBookings] = await Promise.all([
@@ -57,11 +58,8 @@ export default async function AdminDashboard() {
           </div>
         </section>
         <section className="rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b px-5 py-4"><h2 className="font-semibold">Recent bookings</h2><Link href="/admin/notifications" className="text-sm font-medium text-brand-700">Open activity</Link></div>
-          <div className="divide-y">
-            {recentBookings.map((booking) => <div key={booking.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-medium">{booking.user.name}</p><p className="text-xs text-gray-500">{booking.trip.route.source} → {booking.trip.route.destination}</p><p className="mt-1 text-sm font-semibold text-gray-700">{booking.user.phone ? <a href={`tel:${booking.user.phone}`} className="text-brand-700 hover:text-brand-900">☎ {booking.user.phone}</a> : "Phone not provided"}</p></div><div className="flex items-center gap-3"><span className="rounded-full bg-green-50 px-2 py-1 text-xs font-semibold text-green-700">{booking.status}</span>{booking.user.phone && <a href={`tel:${booking.user.phone}`} className="rounded-lg border border-brand-200 px-3 py-1 text-sm font-semibold text-brand-700 hover:bg-brand-50">Call</a>}</div></div>)}
-            {recentBookings.length === 0 && <p className="px-5 py-6 text-sm text-gray-500">No bookings yet.</p>}
-          </div>
+          <div className="flex items-center justify-between border-b px-5 py-4"><h2 className="font-semibold">Recent bookings</h2><Link href="/admin/bookings" className="text-sm font-medium text-brand-700">View all bookings</Link></div>
+          <AdminBookingActions bookings={recentBookings.map((booking) => ({ id: booking.id, status: booking.status, name: booking.user.name, phone: booking.user.phone, source: booking.trip.route.source, destination: booking.trip.route.destination }))} />
         </section>
       </div>
     </div>

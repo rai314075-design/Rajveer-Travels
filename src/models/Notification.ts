@@ -8,7 +8,7 @@ const NotificationSchema = new Schema(
     userId: { type: String, required: true, index: true },
     type: {
       type: String,
-      enum: ["BOOKING_CONFIRMED", "BOOKING_CANCELLED", "PAYMENT_FAILED", "TRIP_REMINDER"],
+      enum: ["BOOKING_CONFIRMED", "BOOKING_CANCELLED", "PAYMENT_FAILED", "TRIP_REMINDER", "OTHER"],
       required: true,
     },
     message: { type: String, required: true },

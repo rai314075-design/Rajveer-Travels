@@ -1,4 +1,3 @@
-import { getSession } from "@auth0/nextjs-auth0";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCustomSession } from "@/lib/session";
@@ -13,17 +12,18 @@ const createBookingSchema = z.object({
 });
 
 export async function GET() {
-  const session = await getSession();
-  if (!session?.user?.sub) return NextResponse.json({ error: "Log in to view bookings" }, { status: 401 });
-  const user = await prisma.user.findUnique({ where: { auth0Id: session.user.sub }, select: { id: true } });
-  if (!user) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  const sessionUser = await getCustomSession();
+  if (!sessionUser) return NextResponse.json({ error: "Log in to view bookings" }, { status: 401 });
 
   const bookings = await prisma.booking.findMany({
-    where: { userId: user.id },
+    where: { userId: sessionUser.id },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
       status: true,
+      payment: { select: { status: true } },
+      totalAmount: true,
+      createdAt: true,
       passengerInfo: true,
       trip: {
         select: {

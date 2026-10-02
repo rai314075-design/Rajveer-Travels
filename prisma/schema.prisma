@@ -95,6 +95,7 @@ model User {
   language   Language   @default(ENGLISH)
   role       Role      @default(USER)
   isSuperAdmin Boolean  @default(false)
+  bannedUntil DateTime?
   notificationChannel NotificationChannel?
   createdAt  DateTime  @default(now())
   bookings   Booking[]
@@ -221,6 +222,7 @@ model RefundRequest {
   booking       Booking      @relation(fields: [bookingId], references: [id])
   upiId         String
   amount        Decimal      @db.Decimal(10, 2)
+  cancellationOtp String?
   status        RefundStatus @default(REQUESTED)
   adminMessage  String?
   createdAt     DateTime     @default(now())

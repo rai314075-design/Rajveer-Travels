@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getCustomSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import NotificationBell from "@/components/NotificationBell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,8 +31,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <>
                 <a href="/support" className="text-white font-bold hover:text-purple-200">{user?.language === "HINDI" ? "सहायता" : "Help"}</a>
                 {user?.role === "ADMIN" && <a href="/admin" className="text-white font-bold hover:text-purple-200">{user.language === "HINDI" ? "डैशबोर्ड" : "Dashboard"}</a>}
-                <a href="/profile" className="text-white font-bold hover:text-purple-200">{user?.language === "HINDI" ? "प्रोफ़ाइल" : "Profile"}</a>
-                <a href="/api/logout" className="font-bold text-white hover:text-purple-200">{user?.language === "HINDI" ? "लॉग आउट" : "Logout"}</a>
+                <a href="/settings" className="text-white font-bold hover:text-purple-200">{user?.language === "HINDI" ? "सेटिंग्स" : "Settings"}</a>
+                <NotificationBell hindi={user?.language === "HINDI"} />
               </>
             ) : (
               <a href="/login" className="font-bold text-white hover:text-purple-200">{user?.language === "HINDI" ? "लॉग इन" : "Login"}</a>

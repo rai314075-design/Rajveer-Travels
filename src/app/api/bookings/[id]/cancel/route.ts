@@ -1,18 +1,17 @@
-import { getSession } from "@auth0/nextjs-auth0";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { notifyAdminsByEmailAndSms } from "@/lib/adminNotifications";
+import { notifyCancellationRequest } from "@/lib/adminNotifications";
+import { getCustomSession } from "@/lib/session";
 import { z } from "zod";
+import { randomInt } from "crypto";
 export const dynamic = "force-dynamic";
 
 
 const schema = z.object({ upiId: z.string().trim().min(3).max(255) });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getSession();
-  if (!session?.user?.sub) return NextResponse.json({ error: "Log in to cancel a booking" }, { status: 401 });
-  const user = await prisma.user.findUnique({ where: { auth0Id: session.user.sub } });
-  if (!user) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  const user = await getCustomSession();
+  if (!user) return NextResponse.json({ error: "Log in to cancel a booking" }, { status: 401 });
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "UPI ID is required for the refund" }, { status: 400 });
 
@@ -27,7 +26,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const lastMinute = hoursUntilDeparture <= 24;
   const amount = booking.totalAmount.mul(lastMinute ? 0.5 : 1);
-  const refund = await prisma.refundRequest.create({ data: { userId: user.id, bookingId: booking.id, upiId: parsed.data.upiId, amount } });
-  await notifyAdminsByEmailAndSms("New cancellation request", `Booking ${booking.id}\nCustomer: ${user.name}\nPhone: ${user.phone || "Not provided"}\nBus: ${booking.trip.bus.busNumber}\nRoute: ${booking.trip.route.source} to ${booking.trip.route.destination}\nDeparture: ${booking.trip.departureTime.toLocaleString()}\nRefund requested: INR ${amount}\nPolicy: ${lastMinute ? "Last-minute cancellation: 50% refund" : "Standard cancellation: admin review"}\nUPI: ${refund.upiId}`);
+  const cancellationOtp = String(randomInt(100000, 1000000));
+  const refund = await prisma.refundRequest.create({ data: { userId: user.id, bookingId: booking.id, upiId: parsed.data.upiId, amount, cancellationOtp } });
+  await notifyCancellationRequest({ busOwnerPhone: booking.trip.bus.ownerPhone, bookingId: booking.id, customerName: user.name, customerEmail: user.email, customerPhone: user.phone || null, otp: cancellationOtp, busNumber: booking.trip.bus.busNumber, source: booking.trip.route.source, destination: booking.trip.route.destination, departureTime: booking.trip.departureTime });
   return NextResponse.json({ success: true, refundId: refund.id, amount: amount.toString(), lastMinute });
 }

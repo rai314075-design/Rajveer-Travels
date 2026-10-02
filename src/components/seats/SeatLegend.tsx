@@ -21,7 +21,7 @@ export function SeatLegend() {
         <span>Locked (10 min)</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-5 h-5 bg-red-50 border border-red-200 rounded"></div>
+        <div className="w-5 h-5 rounded border border-red-700 bg-red-600"></div>
         <span>Booked</span>
       </div>
     </div>

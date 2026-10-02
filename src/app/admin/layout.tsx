@@ -32,6 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <a href="/admin/bus/create" className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700">Create Bus Layout</a>
           <a href="/admin/routes" className="rounded-lg px-3 py-2 text-sm font-semibold hover:bg-gray-800">Routes</a>
           <a href="/admin/trips" className="rounded-lg px-3 py-2 text-sm font-semibold hover:bg-gray-800">Trips & Dates</a>
+          <a href="/admin/bookings" className="rounded-lg px-3 py-2 text-sm font-semibold hover:bg-gray-800">All Bookings</a>
         </nav>
         <p className="mb-2 mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">Support</p>
         <nav className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">

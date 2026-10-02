@@ -27,6 +27,9 @@ export async function POST(req: NextRequest) {
     if (!isJson) return NextResponse.redirect(new URL("/login?error=invalid_credentials", req.url));
     return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
   }
+  if (user.bannedUntil && user.bannedUntil > new Date()) {
+    return isJson ? NextResponse.json({ error: `Your account is suspended until ${user.bannedUntil.toLocaleDateString()}.` }, { status: 403 }) : NextResponse.redirect(new URL("/login?error=account_suspended", req.url));
+  }
 
   // Create a simple session cookie
   const sessionToken = Buffer.from(`${user.id}:${Date.now()}`).toString("base64");

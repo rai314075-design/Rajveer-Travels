@@ -79,11 +79,97 @@ export async function notifyAdminsByEmailAndSms(subject: string, body: string) {
   ]));
 }
 
+export async function notifyCancellationRequest({
+  busOwnerPhone,
+  bookingId,
+  customerName,
+  customerEmail,
+  customerPhone,
+  otp,
+  busNumber,
+  source,
+  destination,
+  departureTime,
+}: {
+  busOwnerPhone: string | null;
+  bookingId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string | null;
+  otp: string;
+  busNumber: string;
+  source: string;
+  destination: string;
+  departureTime: Date;
+}) {
+  const body = [
+    `Cancellation request for booking ${bookingId}`,
+    `Customer: ${customerName}`,
+    `Customer email: ${customerEmail}`,
+    `Customer phone: ${customerPhone || "Not provided"}`,
+    `Bus: ${busNumber}`,
+    `Route: ${source} to ${destination}`,
+    `Departure: ${departureTime.toLocaleString()}`,
+    `Cancellation OTP: ${otp}`,
+    "Enter this OTP in the admin dashboard to complete cancellation.",
+  ].join("\n");
+
+  const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, email: true, phone: true } });
+  const sms = `Cancellation OTP: ${otp}\nBooking: ${bookingId}\nCustomer: ${customerName}\nPhone: ${customerPhone || "Not provided"}`;
+  await Promise.all([
+    ...admins.flatMap((admin) => [
+      sendEmail(admin.email, body),
+      admin.phone ? sendSms(admin.phone, sms) : Promise.resolve(false),
+    ]),
+    busOwnerPhone ? sendSms(busOwnerPhone, sms) : Promise.resolve(false),
+  ]);
+}
+
 export async function sendRefundEmail(to: string, customerName: string, amount: string, message: string) {
   return sendEmail(
     to,
     `Dear ${customerName},\n\nWe are sorry for the inconvenience. ${message}\n\nRefund amount: INR ${amount}\n\nRajveer Travels`,
   );
+}
+
+export async function notifyUserAdminCancellation({
+  email,
+  phone,
+  name,
+  bookingId,
+  refundAmount,
+}: {
+  email: string;
+  phone: string | null;
+  name: string;
+  bookingId: string;
+  refundAmount: string;
+}) {
+  const message = `Dear ${name},\n\nYour booking ${bookingId} was cancelled by Rajveer Travels. Since your payment was received, your refund of INR ${refundAmount} will be processed soon.\n\nRajveer Travels`;
+  await Promise.all([
+    sendEmail(email, message),
+    phone ? sendSms(phone, `Booking ${bookingId} was cancelled by Rajveer Travels. Your refund of INR ${refundAmount} will be processed soon.`) : Promise.resolve(false),
+  ]);
+}
+
+export async function notifyUnpaidBookingCancellation({
+  ownerPhone,
+  bookingId,
+  customerName,
+  customerPhone,
+  busNumber,
+}: {
+  ownerPhone: string | null;
+  bookingId: string;
+  customerName: string;
+  customerPhone: string | null;
+  busNumber: string;
+}) {
+  const message = `Booking ${bookingId} was cancelled by ${customerName} without contacting the bus owner. Customer phone: ${customerPhone || "Not provided"}. Bus: ${busNumber}.`;
+  await Promise.all([
+    notifyAdminsByEmailAndSms("Unpaid booking cancelled", message),
+    ownerPhone ? sendSms(ownerPhone, `Booking ${bookingId} was cancelled by ${customerName} without contacting you. Customer phone: ${customerPhone || "Not provided"}.`) : Promise.resolve(false),
+  ]);
 }
 
 export async function sendBookingCreatedAlerts(alert: NewBookingAlert) {

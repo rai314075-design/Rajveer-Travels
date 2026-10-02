@@ -18,7 +18,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   const [complaints, refunds] = await Promise.all([
     prisma.complaint.findMany({ include: { user: true }, orderBy: { createdAt: "desc" } }),
-    prisma.refundRequest.findMany({ include: { user: true, booking: true }, orderBy: { createdAt: "desc" } }),
+    prisma.refundRequest.findMany({ include: { user: true, booking: { include: { trip: { include: { bus: true, route: true } } } } }, orderBy: { createdAt: "desc" } }),
   ]);
   return NextResponse.json({ complaints, refunds });
 }
@@ -26,7 +26,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   const user = await adminUser();
   if (!user) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
-  const schema = z.object({ type: z.enum(["COMPLAINT", "REFUND"]), id: z.string(), action: z.enum(["RESOLVE", "PAY"]) });
+  const schema = z.object({ type: z.enum(["COMPLAINT", "REFUND"]), id: z.string(), action: z.enum(["RESOLVE", "PAY", "CANCEL"]), otp: z.string().length(6).optional() });
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid support action" }, { status: 400 });
 
@@ -38,6 +38,15 @@ export async function PATCH(req: NextRequest) {
 
   const refund = await prisma.refundRequest.findUnique({ where: { id: parsed.data.id }, include: { user: true } });
   if (!refund) return NextResponse.json({ error: "Refund request not found" }, { status: 404 });
+  if (parsed.data.action === "CANCEL") {
+    if (!parsed.data.otp || parsed.data.otp !== refund.cancellationOtp) return NextResponse.json({ error: "The cancellation OTP is incorrect" }, { status: 400 });
+    await prisma.$transaction([
+      prisma.refundRequest.update({ where: { id: refund.id }, data: { status: "APPROVED" } }),
+      prisma.booking.update({ where: { id: refund.bookingId }, data: { status: "CANCELLED" } }),
+      prisma.seat.updateMany({ where: { bookingId: refund.bookingId }, data: { status: "AVAILABLE", bookingId: null } }),
+    ]);
+    return NextResponse.json({ success: true, message: "Cancellation completed." });
+  }
   const message = "Your refund has been processed to the UPI ID you provided.";
   const delivered = await sendRefundEmail(refund.user.email, refund.user.name, refund.amount.toString(), message);
   if (!delivered) return NextResponse.json({ error: "Refund email was not sent. Configure RESEND_API_KEY and EMAIL_FROM first." }, { status: 503 });

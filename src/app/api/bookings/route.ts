@@ -69,6 +69,15 @@ export async function POST(req: Request) {
       },
     });
     await tx.seat.updateMany({ where: { id: { in: seats.map((seat) => seat.id) } }, data: { status: "BOOKED", bookingId: booking.id } });
+    // Also update the seat reservation status so the /api/seats/status endpoint
+    // returns BOOKED for all users (including the booker and admin).
+    await tx.seatReservation.updateMany({
+      where: {
+        scheduleId: trip.id,
+        seatTemplateId: { in: parsed.data.seatTemplateIds },
+      },
+      data: { status: "BOOKED" },
+    });
 
     return { booking, bus: trip.bus, route: trip.route, departureTime: trip.departureTime };
   });

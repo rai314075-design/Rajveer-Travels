@@ -27,8 +27,24 @@ export async function POST(req: NextRequest) {
     const booking = await prisma.booking.update({
       where: { id: bookingId },
       data: { status: "CONFIRMED" },
-      include: { seats: true, user: true, trip: { include: { bus: true, route: true } } },
+      include: {
+        seats: true,
+        user: true,
+        trip: {
+          include: {
+            bus: true,
+            route: true,
+            vehicle: { include: { seatTemplates: true } },
+          },
+        },
+      },
     });
+
+    // Find seat template IDs for the booked seat numbers
+    const bookedSeatNumbers = new Set(booking.seats.map((s) => s.seatNumber));
+    const bookedSeatTemplateIds = booking.trip.vehicle?.seatTemplates
+      ?.filter((tpl) => bookedSeatNumbers.has(tpl.seatNumber))
+      .map((tpl) => tpl.id) || [];
 
     await prisma.payment.upsert({
       where: { bookingId: booking.id },
@@ -49,6 +65,17 @@ export async function POST(req: NextRequest) {
       where: { bookingId: booking.id },
       data: { status: "BOOKED" },
     });
+    // Also mark the seat reservations as BOOKED so /api/seats/status returns
+    // BOOKED for everyone (booker, admin, and all other users).
+    if (bookedSeatTemplateIds.length > 0) {
+      await prisma.seatReservation.updateMany({
+        where: {
+          scheduleId: booking.trip.id,
+          seatTemplateId: { in: bookedSeatTemplateIds },
+        },
+        data: { status: "BOOKED" },
+      });
+    }
 
     await connectMongo();
     await Notification.create({

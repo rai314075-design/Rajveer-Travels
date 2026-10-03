@@ -144,16 +144,15 @@ export default function CreateBusLayoutPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">Admin management</p>
         <h1 className="mt-2 text-3xl font-bold text-gray-950">Create bus layout</h1>
         <p className="mt-1 text-sm text-gray-500">Click any grid cell to place a seat. Leave cells empty to create aisles and walking space.</p>
-        <p className="mt-2 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">Use the exact bus number from <strong>Admin → Buses</strong>. When you schedule a route, select that same bus and this layout so the correct seats appear to users.</p>
-        <button type="button" onClick={loadSleeperExample} className="mt-3 rounded-lg border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50">Load 2+1 sleeper example</button>
+                <button type="button" onClick={loadSleeperExample} className="mt-3 rounded-lg border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50">Load 2+1 sleeper example</button>
       </div>
 
       {savedLayouts.length > 0 && <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Fleet mapping</p><h2 className="mt-1 text-lg font-semibold">Saved bus layouts</h2></div><span className="text-sm text-gray-500">{savedLayouts.length} bus{savedLayouts.length === 1 ? "" : "es"}</span></div><div className="mt-4 grid gap-3 md:grid-cols-2">{savedLayouts.map((item) => <div key={item.id} className="rounded-xl border border-gray-200 p-4"><div className="flex items-center justify-between gap-3"><p className="font-semibold text-gray-950">{item.busNumber}</p><span className={`rounded-full px-2 py-1 text-xs font-semibold ${item.layoutId ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>{item.layoutId ? "Layout ready" : "Needs layout"}</span></div><p className="mt-1 text-xs text-gray-500">{item.operator} · {item.seatCount} seats · {item.rows} × {item.cols} grid</p><button type="button" onClick={() => { setBus({ busNumber: item.busNumber, operator: item.operator, description: item.description }); setSavedBusId(item.id); }} className="mt-3 text-sm font-semibold text-brand-700 hover:text-brand-900">Edit this bus layout</button></div>)}</div></section>}
 
       <form onSubmit={saveLayout} className="grid gap-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:grid-cols-3">
-        <input required value={bus.busNumber} onChange={(e) => setBus({ ...bus, busNumber: e.target.value })} placeholder="Bus number, e.g. RJ-101" className="rounded-lg border px-3 py-2" />
-        <input required value={bus.operator} onChange={(e) => setBus({ ...bus, operator: e.target.value })} placeholder="Operator" className="rounded-lg border px-3 py-2" />
-        <input value={bus.description} onChange={(e) => setBus({ ...bus, description: e.target.value })} placeholder="Bus description" className="rounded-lg border px-3 py-2" />
+        <input required value={bus.busNumber} onChange={(e) => setBus({ ...bus, busNumber: e.target.value })} placeholder="Bus number, e.g. RJ-101" className="w-full rounded-lg border px-3 py-2" />
+        <input required value={bus.operator} onChange={(e) => setBus({ ...bus, operator: e.target.value })} placeholder="Operator" className="w-full rounded-lg border px-3 py-2" />
+        <input value={bus.description} onChange={(e) => setBus({ ...bus, description: e.target.value })} placeholder="Bus description" className="w-full rounded-lg border px-3 py-2" />
         <div className="flex items-center gap-2 text-sm md:col-span-2">
           <span className="font-semibold">Grid</span>
           <input type="number" min={1} max={20} value={rows} onChange={(e) => resize(Number(e.target.value), cols)} className="w-20 rounded-lg border px-3 py-2" aria-label="Rows" />
@@ -166,21 +165,21 @@ export default function CreateBusLayoutPage() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Front / driver</p><h2 className="mt-1 text-lg font-semibold">{activeDeck} deck canvas</h2></div>
             <div className="flex gap-2">
               {(["LOWER", "UPPER"] as Deck[]).map((deck) => <button key={deck} type="button" onClick={() => toggleDeck(deck)} className={`rounded-lg px-3 py-2 text-sm font-semibold ${activeDeck === deck ? "bg-brand-600 text-white" : "border text-gray-600"}`}>{deck}</button>)}
             </div>
           </div>
-          <div className="overflow-x-auto rounded-2xl border-4 border-gray-300 bg-white p-3 shadow-inner">
-            <div className="mx-auto grid min-w-[540px] gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(70px, 1fr))` }}>
+          <div className="overflow-x-auto rounded-2xl border-4 border-gray-300 bg-white p-3 shadow-inner sm:overflow-visible">
+            <div className="mx-auto grid gap-2 sm:min-w-[540px]" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
               {Array.from({ length: rows * cols }, (_, index) => {
                 const row = Math.floor(index / cols);
                 const col = index % cols;
                 const key = `${activeDeck}-${row}-${col}`;
                 const seat = seats.find((item) => `${item.deck}-${item.row}-${item.col}` === key);
                 const aisle = col === Math.floor(cols / 2);
-                return <button key={key} type="button" onClick={() => selectCell(row, col)} className={`min-h-16 rounded-lg border-2 p-2 text-center text-xs transition ${selectedKey === key ? "border-blue-600 bg-blue-100 shadow-[0_0_0_4px_rgba(37,99,235,0.28)]" : seat ? seat.type === "SLEEPER" ? "border-amber-400 bg-amber-100" : "border-blue-300 bg-blue-50" : aisle ? "border-transparent bg-gray-100 text-gray-400" : "border-dashed border-gray-200 bg-gray-50 text-gray-400"}`}><span className="block font-semibold">{seat?.seatNo || (aisle ? "AISLE" : "+ Add seat")}</span>{seat && <span className="mt-1 block text-[10px] uppercase">{seat.type}</span>}</button>;
+                return <button key={key} type="button" onClick={() => selectCell(row, col)} className={`min-h-12 sm:min-h-16 rounded-lg border-2 px-1 sm:p-2 text-center text-xs sm:text-[10px] transition ${selectedKey === key ? "border-blue-600 bg-blue-100 shadow-[0_0_0_4px_rgba(37,99,235,0.28)]" : seat ? seat.type === "SLEEPER" ? "border-amber-400 bg-amber-100" : "border-blue-300 bg-blue-50" : aisle ? "border-transparent bg-gray-100 text-gray-400" : "border-dashed border-gray-200 bg-gray-50 text-gray-400"}`}><span className="block sm:truncate font-semibold text-[9px] sm:text-xs">{seat?.seatNo || (aisle ? "AISLE" : "+ Add seat")}</span>{seat && <span className="mt-0.5 sm:mt-1 block text-[9px] sm:text-xs uppercase">{seat.type}</span>}</button>;
               })}
             </div>
           </div>

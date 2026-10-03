@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev -p 40000",
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev -p 5000",
     "build": "prisma generate && cross-env NODE_OPTIONS=--no-deprecation next build",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "lint": "next lint",

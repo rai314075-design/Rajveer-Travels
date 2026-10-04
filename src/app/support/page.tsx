@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import BookingHistory from "../profile/BookingHistory";
 
 export default function SupportPage() {
   const searchParams = useSearchParams();
@@ -28,10 +27,9 @@ export default function SupportPage() {
     <section className="mx-auto max-w-4xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
       <header className="border-b border-gray-200 pb-6">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">Rajveer Travels</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">{hindi ? "सहायता और बुकिंग इतिहास" : "Help & booking history"}</h1>
-        <p className="mt-2 max-w-2xl text-gray-500">{hindi ? "अपनी यात्रा देखें, रद्दीकरण अनुरोध भेजें या हमारी सहायता टीम से संपर्क करें।" : "Review your trips, request a cancellation, or contact our support team."}</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">{hindi ? "सहायता" : "Help"}</h1>
+        <p className="mt-2 max-w-2xl text-gray-500">{hindi ? "हमारी सहायता टीम से संपर्क करें।" : "Contact our support team."}</p>
       </header>
-      <BookingHistory hindi={hindi} />
       <form onSubmit={submitComplaint} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
         <div className="mb-5 border-b border-gray-100 pb-4">
           <h2 className="text-xl font-semibold text-gray-900">{hindi ? "सहायता टीम से संपर्क करें" : "Contact support"}</h2>

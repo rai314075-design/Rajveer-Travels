@@ -218,10 +218,10 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
       </div>
 
       {/* Form + Presets */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Form */}
         <div className="lg:col-span-1 space-y-4">
-          <h3 className="font-semibold">
+          <h3 className="font-semibold text-lg">
             {editingId ? "Edit Seat" : "Add Seat"}
           </h3>
 
@@ -233,7 +233,7 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
                 setForm({ ...form, seatNumber: e.target.value })
               }
               required
-              className="border rounded-lg px-3 py-2 w-full"
+              className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm"
             />
             <p className="-mt-2 text-xs text-gray-500">Use a unique label such as 1A, 1B, or 1U.</p>
 
@@ -242,7 +242,7 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
               onChange={(e) =>
                 setForm({ ...form, deck: e.target.value as Deck })
               }
-              className="border rounded-lg px-3 py-2 w-full"
+              className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm"
             >
               <option value="LOWER">Lower Deck</option>
               <option value="UPPER">Upper Deck</option>
@@ -253,68 +253,80 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
               onChange={(e) =>
                 setForm({ ...form, type: e.target.value as SeatType })
               }
-              className="border rounded-lg px-3 py-2 w-full"
+              className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm"
             >
               <option value="SEAT">Seat</option>
               <option value="SLEEPER">Sleeper</option>
             </select>
 
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="number"
-                min={1}
-                max={3}
-                placeholder="Row span"
-                value={form.rowSpan}
-                onChange={(e) =>
-                  setForm({ ...form, rowSpan: parseInt(e.target.value) })
-                }
-                className="border rounded-lg px-3 py-2"
-              />
-              <input
-                type="number"
-                min={1}
-                max={3}
-                placeholder="Col span"
-                value={form.colSpan}
-                onChange={(e) =>
-                  setForm({ ...form, colSpan: parseInt(e.target.value) })
-                }
-                className="border rounded-lg px-3 py-2"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Row span</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={3}
+                  placeholder="Row span"
+                  value={form.rowSpan}
+                  onChange={(e) =>
+                    setForm({ ...form, rowSpan: parseInt(e.target.value) })
+                  }
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Col span</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={3}
+                  placeholder="Col span"
+                  value={form.colSpan}
+                  onChange={(e) =>
+                    setForm({ ...form, colSpan: parseInt(e.target.value) })
+                  }
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm"
+                />
+              </div>
             </div>
             <p className="-mt-2 text-xs text-gray-500">Position 0 starts at the front-left grid cell.</p>
 
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="number"
-                min={0}
-                max={20}
-                placeholder="X position (col)"
-                value={form.xPosition}
-                onChange={(e) =>
-                  setForm({ ...form, xPosition: parseInt(e.target.value) })
-                }
-                className="border rounded-lg px-3 py-2"
-              />
-              <input
-                type="number"
-                min={0}
-                max={20}
-                placeholder="Y position (row)"
-                value={form.yPosition}
-                onChange={(e) =>
-                  setForm({ ...form, yPosition: parseInt(e.target.value) })
-                }
-                className="border rounded-lg px-3 py-2"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">X position (col)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={20}
+                  placeholder="X position (col)"
+                  value={form.xPosition}
+                  onChange={(e) =>
+                    setForm({ ...form, xPosition: parseInt(e.target.value) })
+                  }
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Y position (row)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={20}
+                  placeholder="Y position (row)"
+                  value={form.yPosition}
+                  onChange={(e) =>
+                    setForm({ ...form, yPosition: parseInt(e.target.value) })
+                  }
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 w-full text-sm"
+                />
+              </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2"
+                className="flex-1 min-w-[120px] bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2.5 text-sm font-semibold"
               >
                 {saving ? "Saving..." : editingId ? "Update" : "Add"}
               </button>
@@ -333,7 +345,7 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
                     });
                     setEditingId(null);
                   }}
-                  className="px-4 py-2 border rounded-lg"
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium"
                 >
                   Cancel
                 </button>
@@ -347,7 +359,7 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
             <button
               onClick={() => applyPreset(preset!)}
               disabled={!preset}
-              className="w-full text-left px-3 py-2 border rounded-lg hover:bg-gray-50 text-sm"
+              className="w-full text-left px-3 py-2.5 border rounded-lg hover:bg-gray-50 text-sm"
             >
               {preset?.name || "Select a preset first"}
             </button>
@@ -356,20 +368,20 @@ export function LayoutBuilder({ vehicleId, preset }: LayoutBuilderProps) {
 
         {/* Right: Grid Preview */}
         <div className="lg:col-span-2">
-          <h3 className="font-semibold mb-3">
+          <h3 className="font-semibold mb-3 text-lg">
             {activeDeck} Deck Preview
           </h3>
           <p className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Front / driver</p>
 
           {/* Grid Container */}
           <div
-            className="border rounded-lg bg-gray-50 p-4 relative"
+            className="border rounded-lg bg-gray-50 p-3 sm:p-4 relative overflow-x-auto"
             style={{
               display: "grid",
-              gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${gridRows}, 1fr)`,
-              minHeight: "420px",
-              gap: "8px",
+              gridTemplateColumns: `repeat(${gridCols}, minmax(32px, 1fr))`,
+              gridTemplateRows: `repeat(${gridRows}, minmax(32px, 1fr))`,
+              minHeight: "240px",
+              gap: "4px sm:gap-2",
             }}
           >
             {/* Grid background lines */}

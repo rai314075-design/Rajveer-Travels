@@ -26,7 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <a href="/" className="text-xl font-bold tracking-tight">
               Rajveer Travels
             </a>
-            <HeaderNav sessionUser={sessionUser} user={user} />
+            <HeaderNav sessionUser={!!sessionUser} user={user} />
           </div>
         </header>
 

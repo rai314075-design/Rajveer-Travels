@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function GET() {
   const session = await getSession();
-  if (!session?.user?.sub) return NextResponse.json({ language: "ENGLISH" });
+  if (!session?.user?.sub) return NextResponse.json({ error: "Not logged in" }, { status: 401 });
   const user = await prisma.user.findUnique({ where: { auth0Id: session.user.sub }, select: { language: true } });
   return NextResponse.json({ language: user?.language || "ENGLISH" });
 }

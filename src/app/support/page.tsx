@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function SupportPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [category, setCategory] = useState("SERVICE");
   const [message, setMessage] = useState("");
@@ -12,8 +13,16 @@ export default function SupportPage() {
   const [hindi, setHindi] = useState(false);
 
   useEffect(() => {
-    fetch("/api/profile").then((response) => response.json()).then((data) => setHindi(data.language === "HINDI"));
-  }, []);
+    fetch("/api/profile")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.error) {
+          router.replace("/login");
+          return;
+        }
+        setHindi(data.language === "HINDI");
+      });
+  }, [router]);
 
   async function submitComplaint(event: React.FormEvent) {
     event.preventDefault();

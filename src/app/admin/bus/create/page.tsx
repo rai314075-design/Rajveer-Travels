@@ -147,20 +147,20 @@ export default function CreateBusLayoutPage() {
                 <button type="button" onClick={loadSleeperExample} className="mt-3 rounded-lg border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50">Load 2+1 sleeper example</button>
       </div>
 
-      {savedLayouts.length > 0 && <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Fleet mapping</p><h2 className="mt-1 text-lg font-semibold">Saved bus layouts</h2></div><span className="text-sm text-gray-500">{savedLayouts.length} bus{savedLayouts.length === 1 ? "" : "es"}</span></div><div className="mt-4 grid gap-3 md:grid-cols-2">{savedLayouts.map((item) => <div key={item.id} className="rounded-xl border border-gray-200 p-4"><div className="flex items-center justify-between gap-3"><p className="font-semibold text-gray-950">{item.busNumber}</p><span className={`rounded-full px-2 py-1 text-xs font-semibold ${item.layoutId ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>{item.layoutId ? "Layout ready" : "Needs layout"}</span></div><p className="mt-1 text-xs text-gray-500">{item.operator} · {item.seatCount} seats · {item.rows} × {item.cols} grid</p><button type="button" onClick={() => { setBus({ busNumber: item.busNumber, operator: item.operator, description: item.description }); setSavedBusId(item.id); }} className="mt-3 text-sm font-semibold text-brand-700 hover:text-brand-900">Edit this bus layout</button></div>)}</div></section>}
+      {savedLayouts.length > 0 && <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Fleet mapping</p><h2 className="mt-1 text-lg font-semibold">Saved bus layouts</h2></div><span className="text-sm text-gray-500">{savedLayouts.length} bus{savedLayouts.length === 1 ? "" : "es"}</span></div><div className="mt-4 grid gap-3 md:grid-cols-2">{savedLayouts.map((item) => <div key={item.id} className="rounded-xl border border-gray-200 p-4"><div className="flex items-center justify-between gap-2"><p className="font-semibold text-gray-950 truncate min-w-0">{item.busNumber}</p><span className={`rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap shrink-0 ${item.layoutId ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>{item.layoutId ? "Layout ready" : "Needs layout"}</span></div><p className="mt-1 text-xs text-gray-500">{item.operator} · {item.seatCount} seats · {item.rows} × {item.cols} grid</p><button type="button" onClick={() => { setBus({ busNumber: item.busNumber, operator: item.operator, description: item.description }); setSavedBusId(item.id); }} className="mt-3 text-sm font-semibold text-brand-700 hover:text-brand-900">Edit this bus layout</button></div>)}</div></section>}
 
-      <form onSubmit={saveLayout} className="grid gap-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:grid-cols-3">
-        <input required value={bus.busNumber} onChange={(e) => setBus({ ...bus, busNumber: e.target.value })} placeholder="Bus number, e.g. RJ-101" className="w-full rounded-lg border px-3 py-2" />
-        <input required value={bus.operator} onChange={(e) => setBus({ ...bus, operator: e.target.value })} placeholder="Operator" className="w-full rounded-lg border px-3 py-2" />
-        <input value={bus.description} onChange={(e) => setBus({ ...bus, description: e.target.value })} placeholder="Bus description" className="w-full rounded-lg border px-3 py-2" />
-        <div className="flex items-center gap-2 text-sm md:col-span-2">
+      <form onSubmit={saveLayout} className="grid gap-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm md:grid-cols-3 overflow-hidden">
+        <input required value={bus.busNumber} onChange={(e) => setBus({ ...bus, busNumber: e.target.value })} placeholder="Bus number, e.g. RJ-101" className="box-border w-full max-w-full min-w-0 rounded-lg border px-3 py-2" />
+        <input required value={bus.operator} onChange={(e) => setBus({ ...bus, operator: e.target.value })} placeholder="Operator" className="box-border w-full max-w-full min-w-0 rounded-lg border px-3 py-2" />
+        <input value={bus.description} onChange={(e) => setBus({ ...bus, description: e.target.value })} placeholder="Bus description" className="box-border w-full max-w-full min-w-0 rounded-lg border px-3 py-2" />
+        <div className="flex items-center gap-2 text-sm md:col-span-2 flex-wrap">
           <span className="font-semibold">Grid</span>
-          <input type="number" min={1} max={20} value={rows} onChange={(e) => resize(Number(e.target.value), cols)} className="w-20 rounded-lg border px-3 py-2" aria-label="Rows" />
-          <span>rows ×</span>
-          <input type="number" min={1} max={12} value={cols} onChange={(e) => resize(rows, Number(e.target.value))} className="w-20 rounded-lg border px-3 py-2" aria-label="Columns" />
-          <span>columns</span>
+          <input type="number" min={1} max={20} value={rows} onChange={(e) => resize(Number(e.target.value), cols)} className="box-border w-16 rounded-lg border px-3 py-2" aria-label="Rows" />
+          <span className="font-semibold whitespace-nowrap">rows ×</span>
+          <input type="number" min={1} max={12} value={cols} onChange={(e) => resize(rows, Number(e.target.value))} className="box-border w-16 rounded-lg border px-3 py-2" aria-label="Columns" />
+          <span className="whitespace-nowrap">columns</span>
         </div>
-        <button disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700 disabled:opacity-50">{saving ? "Saving..." : "Save bus layout"}</button>
+        <button disabled={saving} className="box-border min-w-0 rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700 disabled:opacity-50">{saving ? "Saving..." : "Save bus layout"}</button>
       </form>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">

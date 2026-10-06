@@ -14,11 +14,11 @@ export default function HeaderNav({ sessionUser, user }: Props) {
 
   const links = [
     { href: "/search", label: hindi ? "बस बुक करें" : "Book a Bus" },
-    { href: "/support", label: hindi ? "सहायता" : "Help" },
+    ...(sessionUser ? [{ href: "/support", label: hindi ? "सहायता" : "Help" }] : []),
     ...(user?.role === "ADMIN"
       ? [{ href: "/admin", label: hindi ? "डैशबोर्ड" : "Dashboard" }]
       : []),
-    { href: "/settings", label: hindi ? "सेटिंग्स" : "Settings" },
+    ...(sessionUser ? [{ href: "/settings", label: hindi ? "सेटिंग्स" : "Settings" }] : []),
     ...(!sessionUser ? [{ href: "/login", label: "Login" }] : []),
   ];
 
@@ -42,7 +42,7 @@ export default function HeaderNav({ sessionUser, user }: Props) {
         {bookingHistoryLink && (
           <a
             href={bookingHistoryLink.href}
-            className="whitespace-nowrap rounded-lg bg-white/10 px-2.5 py-1 text-xs text-white transition hover:bg-white/20"
+            className="whitespace-nowrap rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-white/25 active:scale-95"
           >
             {bookingHistoryLink.label}
           </a>

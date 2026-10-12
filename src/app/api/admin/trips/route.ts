@@ -112,11 +112,14 @@ export async function DELETE(req: NextRequest) {
 
   const trip = await prisma.trip.findUnique({
     where: { id: tripId },
-    select: { id: true, _count: { select: { bookings: true } } },
+    include: {
+      _count: { select: { bookings: true } },
+      bookings: { where: { status: "CONFIRMED" }, select: { id: true } },
+    },
   });
   if (!trip) return NextResponse.json({ error: "Trip not found" }, { status: 404 });
-  if (trip._count.bookings > 0) {
-    return NextResponse.json({ error: "This trip has bookings and cannot be removed." }, { status: 409 });
+  if (trip.bookings.length > 0) {
+    return NextResponse.json({ error: "Cancel or move the bookings first" }, { status: 409 });
   }
 
   await prisma.trip.update({ where: { id: tripId }, data: { isActive: false } });

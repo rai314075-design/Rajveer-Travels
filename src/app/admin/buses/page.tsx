@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Bus = {
   id: string;
@@ -17,6 +19,7 @@ type Bus = {
 };
 
 export default function AdminBusesPage() {
+  const queryClient = useQueryClient();
   const [buses, setBuses] = useState<Bus[]>([]);
   const [form, setForm] = useState({
     busNumber: "",
@@ -30,8 +33,20 @@ export default function AdminBusesPage() {
     dropLocation: "",
   });
   const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  const { data: busesList = [] } = useQuery<Bus[]>({
+    queryKey: ["admin-buses"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/buses");
+      if (!res.ok) throw new Error("Failed to load buses");
+      return res.json();
+    },
+    staleTime: 60 * 1000,
+  });
+
+  // Keep local state in sync so the page always shows the fresh list
+  useEffect(() => setBuses(busesList), [busesList]);
 
   async function loadBuses() {
     const res = await fetch("/api/admin/buses");
@@ -58,23 +73,28 @@ export default function AdminBusesPage() {
       return;
     }
     setForm({ busNumber: "", type: "AC_SEATER", totalSeats: 40, description: "", upiId: "", paymentQrUrl: "", ownerPhone: "", pickupLocation: "", dropLocation: "" });
-    loadBuses();
+    queryClient.invalidateQueries({ queryKey: ["admin-buses"] });
   }
 
-  async function handleDelete(bus: Bus) {
-    if (!window.confirm(`Remove ${bus.busNumber} from the bus listing?`)) return;
+  const deleteMutation = useMutation({
+    mutationFn: async (busId: string) => {
+      const res = await fetch(`/api/buses/${busId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to delete bus");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-buses"] });
+    },
+    onError: (error) => {
+      setError(error instanceof Error ? error.message : "Failed to delete bus");
+    },
+  });
 
-    setDeletingId(bus.id);
-    setError("");
-    const res = await fetch(`/api/admin/buses?id=${encodeURIComponent(bus.id)}`, { method: "DELETE" });
-    setDeletingId(null);
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      setError(data?.error || "Failed to remove bus");
-      return;
-    }
-    setBuses((current) => current.filter((item) => item.id !== bus.id));
-  }
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; bus: Bus | null }>({
+    open: false,
+    bus: null,
+  });
 
   return (
     <div>
@@ -182,17 +202,33 @@ export default function AdminBusesPage() {
               </div>
               <button
                 type="button"
-                onClick={() => handleDelete(b)}
-                disabled={deletingId === b.id}
+                onClick={() => setDeleteConfirm({ open: true, bus: b })}
+                disabled={deleteMutation.isPending}
                 className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
               >
-                {deletingId === b.id ? "Removing..." : "Remove"}
+                {deleteMutation.isPending ? "Removing..." : "Delete"}
               </button>
             </div>
           </div>
         ))}
         {buses.length === 0 && <p className="p-4 text-gray-400">No buses added yet.</p>}
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm((prev) => ({ ...prev, open }))}
+        title="Delete this bus?"
+        description={`Bus ${deleteConfirm.bus?.busNumber} will be permanently removed from the admin listing. If it has upcoming trips with active bookings, those must be cancelled or moved first.`}
+        onConfirm={async () => {
+          if (deleteConfirm.bus) {
+            await deleteMutation.mutateAsync(deleteConfirm.bus.id);
+          }
+          setDeleteConfirm({ open: false, bus: null });
+        }}
+        loading={deleteMutation.isPending}
+        toastSuccess="Bus deleted"
+        toastError="Failed to delete bus"
+      />
     </div>
   );
 }

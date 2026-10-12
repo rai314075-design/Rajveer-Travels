@@ -72,6 +72,32 @@ export async function DELETE(
   if (!guard.ok)
     return NextResponse.json({ error: guard.message }, { status: guard.status });
 
+  const vehicle = await prisma.vehicle.findUnique({
+    where: { id: params.id },
+    include: {
+      trips: {
+        where: { isActive: true },
+        include: {
+          _count: { select: { bookings: { where: { status: "CONFIRMED" } } } },
+          bookings: { where: { status: "CONFIRMED" }, select: { id: true } },
+        },
+      },
+    },
+  });
+
+  if (!vehicle) return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
+
+  // Block deletion if the vehicle has upcoming trips with confirmed bookings
+  const tripsWithConfirmedBookings = vehicle.trips.filter(
+    (t) => t._count.bookings > 0
+  );
+  if (tripsWithConfirmedBookings.length > 0) {
+    return NextResponse.json(
+      { error: "Cancel or move the bookings first" },
+      { status: 409 }
+    );
+  }
+
   await prisma.vehicle.update({
     where: { id: params.id },
     data: { isActive: false },

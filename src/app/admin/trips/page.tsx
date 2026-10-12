@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Bus = { id: string; busNumber: string; ownerPhone?: string | null; pickupLocation?: string | null; dropLocation?: string | null };
 type RouteRow = { id: string; source: string; destination: string; pickupPoint?: string | null; dropPoint?: string | null };
@@ -16,10 +18,10 @@ type Trip = {
 };
 
 export default function AdminTripsPage() {
+  const queryClient = useQueryClient();
   const [buses, setBuses] = useState<Bus[]>([]);
   const [routes, setRoutes] = useState<RouteRow[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [trips, setTrips] = useState<Trip[]>([]);
   const [form, setForm] = useState({
     busId: "",
     routeId: "",
@@ -31,18 +33,25 @@ export default function AdminTripsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const { data: trips = [] } = useQuery<Trip[]>({
+    queryKey: ["admin-trips"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/trips");
+      if (!res.ok) throw new Error("Failed to load trips");
+      return res.json();
+    },
+    staleTime: 60 * 1000,
+  });
 
   async function loadAll() {
-    const [busesRes, routesRes, tripsRes] = await Promise.all([
+    const [busesRes, routesRes, vehiclesRes] = await Promise.all([
       fetch("/api/admin/buses"),
       fetch("/api/admin/routes"),
-      fetch("/api/admin/trips"),
+      fetch("/api/vehicles"),
     ]);
     setBuses(await busesRes.json());
     setRoutes(await routesRes.json());
-    setTrips(await tripsRes.json());
-    const vehiclesRes = await fetch("/api/vehicles");
     setVehicles(await vehiclesRes.json());
   }
 
@@ -71,22 +80,28 @@ export default function AdminTripsPage() {
       return;
     }
     setForm({ busId: "", routeId: "", vehicleId: "", travelDate: "", departureTime: "", arrivalTime: "", fare: "" });
-    loadAll();
+    queryClient.invalidateQueries({ queryKey: ["admin-trips"] });
   }
 
-  async function handleRemove(trip: Trip) {
-    if (!window.confirm("Remove this scheduled trip from active listings?")) return;
-    setRemovingId(trip.id);
-    setError("");
-    const res = await fetch(`/api/admin/trips?id=${encodeURIComponent(trip.id)}`, { method: "DELETE" });
-    setRemovingId(null);
-    if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      setError(data?.error || "Failed to remove trip");
-      return;
-    }
-    setTrips((current) => current.filter((item) => item.id !== trip.id));
-  }
+  const deleteMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      const res = await fetch(`/api/trips/${tripId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to delete trip");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-trips"] });
+    },
+    onError: (error) => {
+      setError(error instanceof Error ? error.message : "Failed to delete trip");
+    },
+  });
+
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; trip: Trip | null }>({
+    open: false,
+    trip: null,
+  });
 
   return (
     <div>
@@ -135,13 +150,38 @@ export default function AdminTripsPage() {
             <span className="text-gray-500">{new Date(t.travelDate).toLocaleDateString()}</span>
             <span className="text-gray-500">{new Date(t.departureTime).toLocaleTimeString()}</span>
             <span className="font-semibold text-brand-700">₹{t.fare}</span>
-            <button type="button" onClick={() => handleRemove(t)} disabled={removingId === t.id} className="rounded-lg border border-red-200 px-3 py-1 font-medium text-red-600 hover:bg-red-50 disabled:opacity-50">
-              {removingId === t.id ? "Removing..." : "Remove"}
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm({ open: true, trip: t })}
+              disabled={deleteMutation.isPending}
+              className="rounded-lg border border-red-200 px-3 py-1 font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </button>
           </div>
         ))}
         {trips.length === 0 && <p className="p-4 text-gray-400">No trips scheduled yet.</p>}
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm((prev) => ({ ...prev, open }))}
+        title="Delete this trip?"
+        description={
+          deleteConfirm.trip
+            ? `Trip ${deleteConfirm.trip.bus.busNumber} — ${deleteConfirm.trip.route.source} → ${deleteConfirm.trip.route.destination} on ${new Date(deleteConfirm.trip.travelDate).toLocaleDateString()} will be permanently removed. If the trip has active bookings, they must be cancelled or moved first.`
+            : "This trip will be permanently removed. If the trip has active bookings, they must be cancelled or moved first."
+        }
+        onConfirm={async () => {
+          if (deleteConfirm.trip) {
+            await deleteMutation.mutateAsync(deleteConfirm.trip.id);
+          }
+          setDeleteConfirm({ open: false, trip: null });
+        }}
+        loading={deleteMutation.isPending}
+        toastSuccess="Trip deleted"
+        toastError="Failed to delete trip"
+      />
     </div>
   );
 }

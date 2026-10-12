@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getCustomSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import HeaderNav from "@/components/HeaderNav";
+import QueryClientProvider from "./QueryClientProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,7 +31,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </header>
 
-        <main>{children}</main>
+        <QueryClientProvider>
+          <main>{children}</main>
+        </QueryClientProvider>
       </body>
     </html>
   );

@@ -60,9 +60,19 @@ export async function DELETE(req: NextRequest) {
 
   const bus = await prisma.bus.findUnique({
     where: { id: busId },
-    select: { id: true, busNumber: true, isActive: true },
+    include: { _count: { select: { trips: true } } },
   });
   if (!bus) return NextResponse.json({ error: "Bus not found" }, { status: 404 });
+
+  // Block deletion if the bus has trips with confirmed bookings
+  const tripsWithConfirmedBookings = await prisma.trip.findMany({
+    where: { busId: bus.id, isActive: true, bookings: { some: { status: "CONFIRMED" } } },
+    include: { _count: { select: { bookings: { where: { status: "CONFIRMED" } } } } },
+  });
+
+  if (tripsWithConfirmedBookings.length > 0) {
+    return NextResponse.json({ error: "Cancel or move the bookings first" }, { status: 409 });
+  }
 
   await prisma.bus.update({ where: { id: busId }, data: { isActive: false } });
   return NextResponse.json({ success: true });

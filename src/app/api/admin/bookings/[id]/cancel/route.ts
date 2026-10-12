@@ -36,3 +36,32 @@ export async function POST(_request: Request, { params }: { params: { id: string
 
   return NextResponse.json({ success: true, paid, message: paid ? "Ticket cancelled and refund notification sent." : "Ticket cancelled." });
 }
+
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+  const sessionUser = await getCustomSession();
+  if (!sessionUser) return NextResponse.json({ error: "Log in to delete a booking" }, { status: 401 });
+  const admin = await prisma.user.findUnique({ where: { id: sessionUser.id }, select: { role: true } });
+  if (admin?.role !== "ADMIN") return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+
+  const booking = await prisma.booking.findUnique({
+    where: { id: params.id },
+    include: { user: true, payment: true, trip: { include: { bus: true, route: true } } },
+  });
+  if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+
+  // Only allow deletion of cancelled bookings
+  if (booking.status !== "CANCELLED") {
+    return NextResponse.json({ error: "Only cancelled bookings can be deleted" }, { status: 400 });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.seat.updateMany({ where: { bookingId: booking.id }, data: { bookingId: null } });
+    await tx.complaint.deleteMany({ where: { bookingId: booking.id } });
+    await tx.refundRequest.deleteMany({ where: { bookingId: booking.id } });
+    await tx.payment.deleteMany({ where: { bookingId: booking.id } });
+    await tx.seatReservation.deleteMany({ where: { bookingId: booking.id } });
+    await tx.booking.delete({ where: { id: booking.id } });
+  });
+
+  return NextResponse.json({ success: true });
+}

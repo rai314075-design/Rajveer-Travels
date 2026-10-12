@@ -6,6 +6,8 @@ export default async function HomePage() {
   const hindi = language === "HINDI";
   const today = new Date().toISOString().slice(0, 10);
 
+  
+
   return (
     <main className="min-h-[calc(100vh-80px)] bg-gray-50">
       <section className="overflow-hidden bg-gray-950 text-white">

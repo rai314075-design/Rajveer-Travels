@@ -21,7 +21,20 @@ const GoogleIcon = () => (
   </svg>
 );
 
-export default function LoginPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  session_expired:
+    "Your sign-in link has expired or was already used. Please try logging in again.",
+  access_denied: "Sign-in was cancelled. Please try again.",
+};
+
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams?: { error?: string };
+}) {
+  const errorCode = searchParams?.error;
+  const errorMessage = errorCode ? ERROR_MESSAGES[errorCode] : undefined;
+
   return (
     <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-purple-50 py-12 px-4">
       <div className="w-full max-w-md">
@@ -30,6 +43,15 @@ export default function LoginPage() {
           <h1 className="mt-4 text-2xl font-bold text-gray-900">Welcome back</h1>
           <p className="mt-2 text-sm text-gray-600">Log in to your Rajveer Travels account</p>
         </div>
+
+        {errorMessage && (
+          <div
+            role="alert"
+            className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {errorMessage}
+          </div>
+        )}
 
         <div className="bg-white rounded-xl shadow-md p-8 space-y-5">
           <form action="/api/login" method="POST" className="space-y-5">

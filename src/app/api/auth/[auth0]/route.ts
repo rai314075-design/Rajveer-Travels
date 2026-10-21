@@ -1,6 +1,6 @@
 import { handleAuth, handleCallback, handleLogin } from "@auth0/nextjs-auth0";
 import { prisma } from "@/lib/prisma";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 
@@ -52,9 +52,30 @@ export const GET = handleAuth({
     return handleLogin(req, ctx, {
       returnTo,
       authorizationParams: {
-        audience: process.env.AUTH0_AUDIENCE,
         ...(connection ? { connection } : {}),
       },
     });
+  },
+  // Auth0 authorization codes and the transaction (state) cookie are single-use.
+  // Replaying a callback — browser refresh/back, double submit, a prefetched
+  // link — therefore fails with `invalid_grant` or a missing state cookie. That
+  // is expected rather than a real failure, so send the visitor back to the
+  // login page instead of surfacing an unhandled error.
+  onError: (req: NextRequest, error: any) => {
+    const cause = error?.cause;
+    const isReplay =
+      cause?.error === "invalid_grant" ||
+      cause?.errorDescription === "Invalid authorization code" ||
+      cause?.name === "MissingStateCookieError" ||
+      cause?.name === "MalformedStateCookieError" ||
+      /invalid_grant|Invalid authorization code|Missing state cookie/i.test(error?.message || "");
+
+    if (isReplay) {
+      console.warn("Auth0 callback replayed — redirecting to login");
+      return NextResponse.redirect(new URL("/login?error=session_expired", req.url));
+    }
+
+    console.error("Auth0 error", error);
+    return NextResponse.json({ error: "Authentication failed" }, { status: error?.status || 500 });
   },
 });

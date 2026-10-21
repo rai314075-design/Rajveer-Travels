@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "./LanguageProvider";
+import { formatDateTime } from "@/lib/formatDate";
 
 type Booking = {
   id: string;
@@ -18,14 +20,13 @@ type Booking = {
 };
 
 function formatBookingDate(value: string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
-  }).format(new Date(value));
+  return formatDateTime(value);
 }
 
-export default function BookingHistory({ hindi, initialBookings }: { hindi: boolean; initialBookings?: Booking[] }) {
+export default function BookingHistoryClient({ initialBookings }: { hindi?: boolean; initialBookings?: Booking[] }) {
+  // Read the active language from context so a language change on the profile
+  // page re-renders this section immediately, with no refresh.
+  const { hindi } = useLanguage();
   const [bookings, setBookings] = useState(initialBookings || []);
   const [selectedBooking, setSelectedBooking] = useState<string | null>(null);
   const [upiId, setUpiId] = useState("");

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { formatDate, formatDateTime } from "@/lib/formatDate";
 
 type Bus = { id: string; busNumber: string; ownerPhone?: string | null; pickupLocation?: string | null; dropLocation?: string | null };
 type RouteRow = { id: string; source: string; destination: string; pickupPoint?: string | null; dropPoint?: string | null };
@@ -147,8 +148,8 @@ export default function AdminTripsPage() {
         {trips.map((t) => (
           <div key={t.id} className="p-4 flex flex-wrap items-center justify-between gap-3 text-sm">
             <span className="font-medium">{t.bus.busNumber} — {t.route.source} → {t.route.destination}</span>
-            <span className="text-gray-500">{new Date(t.travelDate).toLocaleDateString()}</span>
-            <span className="text-gray-500">{new Date(t.departureTime).toLocaleTimeString()}</span>
+            <span className="text-gray-500">{formatDate(t.travelDate)}</span>
+            <span className="text-gray-500">{formatDateTime(t.departureTime)}</span>
             <span className="font-semibold text-brand-700">₹{t.fare}</span>
             <button
               type="button"
@@ -169,7 +170,7 @@ export default function AdminTripsPage() {
         title="Delete this trip?"
         description={
           deleteConfirm.trip
-            ? `Trip ${deleteConfirm.trip.bus.busNumber} — ${deleteConfirm.trip.route.source} → ${deleteConfirm.trip.route.destination} on ${new Date(deleteConfirm.trip.travelDate).toLocaleDateString()} will be permanently removed. If the trip has active bookings, they must be cancelled or moved first.`
+            ? `Trip ${deleteConfirm.trip.bus.busNumber} — ${deleteConfirm.trip.route.source} → ${deleteConfirm.trip.route.destination} on ${formatDate(deleteConfirm.trip.travelDate)} will be permanently removed. If the trip has active bookings, they must be cancelled or moved first.`
             : "This trip will be permanently removed. If the trip has active bookings, they must be cancelled or moved first."
         }
         onConfirm={async () => {

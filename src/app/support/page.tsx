@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function SupportPage() {
   const router = useRouter();
@@ -10,17 +11,15 @@ export default function SupportPage() {
   const [message, setMessage] = useState("");
   const [bookingId, setBookingId] = useState(searchParams.get("bookingId") || "");
   const [notice, setNotice] = useState("");
-  const [hindi, setHindi] = useState(false);
+  // Language comes from the app-wide context so it stays in sync with the
+  // profile page without a refresh.
+  const { hindi } = useLanguage();
 
   useEffect(() => {
     fetch("/api/profile")
       .then((response) => response.json())
       .then((data) => {
-        if (data.error) {
-          router.replace("/login");
-          return;
-        }
-        setHindi(data.language === "HINDI");
+        if (data.error) router.replace("/login");
       });
   }, [router]);
 

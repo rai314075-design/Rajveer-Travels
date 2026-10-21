@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getCustomSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import HeaderNav from "@/components/HeaderNav";
+import LanguageProvider from "@/components/LanguageProvider";
 import QueryClientProvider from "./QueryClientProvider";
 import "./globals.css";
 
@@ -22,18 +23,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body>
-        <header className="bg-[#C84310] text-white">
-          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-7 sm:px-6">
-            <a href="/" className="text-xl font-bold tracking-tight">
-              Rajveer Travels
-            </a>
-            <HeaderNav sessionUser={!!sessionUser} user={user} />
-          </div>
-        </header>
+        <LanguageProvider initialLanguage={(user?.language as "ENGLISH" | "HINDI") || "ENGLISH"}>
+          <header className="bg-[#C84310] text-white">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-7 sm:px-6">
+              <a href="/" className="text-xl font-bold tracking-tight">
+                Rajveer Travels
+              </a>
+              <HeaderNav sessionUser={!!sessionUser} user={user} />
+            </div>
+          </header>
 
-        <QueryClientProvider>
-          <main>{children}</main>
-        </QueryClientProvider>
+          <QueryClientProvider>
+            <main>{children}</main>
+          </QueryClientProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatDate } from "@/lib/formatDate";
 
 type Notice = { _id: string; type: string; message: string; read: boolean; createdAt: string };
 
@@ -28,7 +29,7 @@ export default function NotificationBell({ hindi }: { hindi: boolean }) {
     </button>
     {open && <div className="absolute right-0 z-20 mt-3 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-gray-200 bg-white text-gray-900 shadow-2xl">
       <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-3"><div><h2 className="font-semibold">{hindi ? "सूचनाएं" : "Notifications"}</h2><p className="text-xs text-gray-500">{unread ? `${unread} ${hindi ? "नई सूचना" : "unread"}` : (hindi ? "सब पढ़ा हुआ" : "All caught up")}</p></div><button type="button" onClick={() => markRead()} disabled={!unread} className="text-xs font-semibold text-brand-700 disabled:text-gray-300">{hindi ? "सब पढ़ा हुआ" : "Mark all read"}</button></div>
-      {notifications.length === 0 ? <p className="px-4 py-8 text-center text-sm text-gray-500">{hindi ? "कोई नई सूचना नहीं।" : "No notifications yet."}</p> : <div className="max-h-80 overflow-y-auto">{notifications.map((notice) => <button type="button" key={notice._id} onClick={() => markRead(notice._id)} className={`block w-full border-b border-gray-100 px-4 py-3 text-left transition last:border-0 hover:bg-gray-50 ${notice.read ? "text-gray-500" : "border-l-2 border-l-brand-600 bg-brand-50/40 font-semibold text-gray-900"}`}><span className="block text-sm leading-5">{notice.message}</span><span className="mt-1 block text-xs font-normal text-gray-400">{new Date(notice.createdAt).toLocaleDateString()}</span></button>)}</div>}
+      {notifications.length === 0 ? <p className="px-4 py-8 text-center text-sm text-gray-500">{hindi ? "कोई नई सूचना नहीं।" : "No notifications yet."}</p> : <div className="max-h-80 overflow-y-auto">{notifications.map((notice) => <button type="button" key={notice._id} onClick={() => markRead(notice._id)} className={`block w-full border-b border-gray-100 px-4 py-3 text-left transition last:border-0 hover:bg-gray-50 ${notice.read ? "text-gray-500" : "border-l-2 border-l-brand-600 bg-brand-50/40 font-semibold text-gray-900"}`}><span className="block text-sm leading-5">{notice.message}</span><span className="mt-1 block text-xs font-normal text-gray-400">{formatDate(notice.createdAt)}</span></button>)}</div>}
     </div>}
   </div>;
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import NotificationBell from "./NotificationBell";
+import { useLanguage } from "./LanguageProvider";
 
 type Props = {
   sessionUser: boolean;
@@ -10,7 +11,7 @@ type Props = {
 
 export default function HeaderNav({ sessionUser, user }: Props) {
   const [open, setOpen] = useState(false);
-  const hindi = user?.language === "HINDI";
+  const { hindi } = useLanguage();
 
   const links = [
     { href: "/search", label: hindi ? "बस बुक करें" : "Book a Bus" },
@@ -21,10 +22,6 @@ export default function HeaderNav({ sessionUser, user }: Props) {
     ...(sessionUser ? [{ href: "/settings", label: hindi ? "सेटिंग्स" : "Settings" }] : []),
     ...(!sessionUser ? [{ href: "/login", label: "Login" }] : []),
   ];
-
-  const bookingHistoryLink = !sessionUser
-    ? null
-    : { href: "/profile", label: hindi ? "बुकिंग इतिहास" : "Booking history" };
 
   return (
     <div className="relative flex items-center gap-2">
@@ -39,14 +36,6 @@ export default function HeaderNav({ sessionUser, user }: Props) {
             {link.label}
           </a>
         ))}
-        {bookingHistoryLink && (
-          <a
-            href={bookingHistoryLink.href}
-            className="whitespace-nowrap rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-white/25 active:scale-95"
-          >
-            {bookingHistoryLink.label}
-          </a>
-        )}
       </nav>
 
       {/* Notification Bell: visible on desktop, hidden on mobile when menu open */}
@@ -85,15 +74,6 @@ export default function HeaderNav({ sessionUser, user }: Props) {
               {link.label}
             </a>
           ))}
-          {bookingHistoryLink && (
-            <a
-              href={bookingHistoryLink.href}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
-            >
-              {bookingHistoryLink.label}
-            </a>
-          )}
         </div>
       )}
     </div>

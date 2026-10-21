@@ -11,13 +11,14 @@ export const GET = handleAuth({
     return handleCallback(req, ctx, {
       afterCallback: async (_req: NextRequest, session: any) => {
         if (session?.user) {
-          const email = session.user.email ?? `${session.user.sub.replace(/[^a-zA-Z0-9]/g, "_")}@phone.local`;
+          const email = (session.user.email ?? `${session.user.sub.replace(/[^a-zA-Z0-9]/g, "_")}@phone.local`).toLowerCase();
           const phone = session.user.phone_number ?? null;
           await prisma.user.upsert({
             where: { auth0Id: session.user.sub },
             update: {
               name: session.user.name ?? "Traveler",
-              email,
+              // The email is set once at registration and never re-synced, so
+              // it cannot drift if the identity provider changes it later.
               ...(phone ? { phone, phoneVerified: session.user.phone_number_verified === true } : {}),
               ...(session.user.email_verified === true ? { emailVerified: true } : {}),
             },
@@ -28,8 +29,8 @@ export const GET = handleAuth({
               phone,
               phoneVerified: session.user.phone_number_verified === true,
               emailVerified: session.user.email_verified === true,
-              role: email === process.env.ADMIN_EMAIL ? "ADMIN" : "USER",
-              isSuperAdmin: email === process.env.ADMIN_EMAIL,
+              role: email === process.env.ADMIN_EMAIL?.toLowerCase() ? "ADMIN" : "USER",
+              isSuperAdmin: email === process.env.ADMIN_EMAIL?.toLowerCase(),
             },
           });
         }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { RecaptchaVerifier, getAuth, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 import { getApps, initializeApp } from "firebase/app";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const firebaseApp = getApps().length > 0 ? getApps()[0] : initializeApp({
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,15 +12,27 @@ const firebaseApp = getApps().length > 0 ? getApps()[0] : initializeApp({
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 });
 
-export default function ProfileForm({ name, phone, address, language, phoneVerified, email, emailVerified }: { name: string; phone: string | null; address: string | null; language: "ENGLISH" | "HINDI"; phoneVerified: boolean; email: string; emailVerified: boolean }) {
+export type ProfileValues = {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  language: "ENGLISH" | "HINDI";
+  phoneVerified: boolean;
+  emailVerified: boolean;
+};
+
+export default function ProfileForm({ name, phone, address, language, phoneVerified, email, emailVerified, onSaved, onVerified }: { name: string; phone: string | null; address: string | null; language: "ENGLISH" | "HINDI"; phoneVerified: boolean; email: string; emailVerified: boolean; onSaved?: (values: ProfileValues) => void; onVerified?: (values: ProfileValues) => void }) {
   const [nameValue, setNameValue] = useState(name);
-  const [emailValue, setEmailValue] = useState(email);
   const [phoneValue, setPhoneValue] = useState(phone ?? "");
   const [addressValue, setAddressValue] = useState(address ?? "");
-  const [languageValue, setLanguageValue] = useState(language);
   const [phoneIsVerified, setPhoneIsVerified] = useState(phoneVerified);
   const [emailIsVerified, setEmailIsVerified] = useState(emailVerified);
-  const hindi = language === "HINDI";
+  // The dropdown holds the pending language choice. The page copy follows the
+  // saved language (from context) so nothing flips until "Save profile" is
+  // pressed.
+  const [languageValue, setLanguageValue] = useState(language);
+  const { hindi, setLanguage } = useLanguage();
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [code, setCode] = useState("");
@@ -28,6 +41,18 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const confirmationResult = useRef<ConfirmationResult | null>(null);
   const recaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
+
+  function currentValues(): ProfileValues {
+    return {
+      name: nameValue,
+      email,
+      phone: phoneValue,
+      address: addressValue,
+      language: languageValue,
+      phoneVerified: phoneIsVerified,
+      emailVerified: emailIsVerified,
+    };
+  }
 
   // Initialize the invisible reCAPTCHA verifier once on mount so the
   // grecaptcha script is loaded before the user requests phone OTP.
@@ -49,8 +74,11 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
     setSaving(true);
     setMessage("");
 
-    if (phoneValue !== phone && !phoneIsVerified) {
+    // Only a changed phone needs OTP verification. Saving the name, address or
+    // language must work even when the phone on the account is unverified.
+    if (phoneValue !== (phone ?? "") && !phoneIsVerified) {
       setMessage(hindi ? "सेव करने से पहले नए फोन नंबर का OTP सत्यापित करें।" : "Verify the new phone number with OTP before saving.");
+      setSaving(false);
       return;
     }
 
@@ -61,7 +89,15 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
     });
 
     const data = await response.json().catch(() => ({ error: "Could not update profile. Please try again." }));
-    setMessage(response.ok ? (hindi ? "प्रोफ़ाइल अपडेट हो गई।" : "Profile updated.") : data.error || (hindi ? "प्रोफ़ाइल अपडेट नहीं हो सकी।" : "Could not update profile."));
+    if (response.ok) {
+      // Apply the saved language to the app-wide context so the header, the
+      // account summary and every other client component flip together.
+      setLanguage(languageValue);
+      onSaved?.(currentValues());
+      setMessage(hindi ? "प्रोफ़ाइल अपडेट हो गई।" : "Profile updated.");
+    } else {
+      setMessage(data.error || (hindi ? "प्रोफ़ाइल अपडेट नहीं हो सकी।" : "Could not update profile."));
+    }
     setSaving(false);
   }
 
@@ -107,9 +143,11 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
     const data = await response.json().catch(() => ({ error: "Could not verify phone number. Please try again." }));
     setMessage(response.ok ? (hindi ? "फोन नंबर सत्यापित हो गया।" : "Phone number verified.") : data.error);
     if (response.ok) {
-      setPhoneValue(data.phone || phoneValue);
+      const verifiedPhone = data.phone || phoneValue;
+      setPhoneValue(verifiedPhone);
       setOtpSent(false);
       setPhoneIsVerified(true);
+      onVerified?.({ ...currentValues(), phone: verifiedPhone, phoneVerified: true });
       confirmationResult.current = null;
       recaptchaVerifier.current?.clear();
       recaptchaVerifier.current = null;
@@ -117,7 +155,9 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
   }
 
   async function sendEmailOtp() {
-    const response = await fetch("/api/profile/email/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: emailValue }) });
+    // The email is fixed at registration, so the code always goes to the
+    // address on the account — there is nothing for the user to type.
+    const response = await fetch("/api/profile/email/send", { method: "POST", headers: { "Content-Type": "application/json" } });
     const data = await response.json().catch(() => ({ error: "Could not send email verification code. Please try again." }));
     setMessage(response.ok ? (hindi ? "ईमेल पर सत्यापन कोड भेज दिया गया है।" : "Email verification code sent.") : data.error);
     if (response.ok) {
@@ -133,19 +173,20 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
     if (response.ok) {
       setEmailOtpSent(false);
       setEmailIsVerified(true);
-      setEmailValue(data.email || emailValue);
+      onVerified?.({ ...currentValues(), emailVerified: true });
     }
   }
 
   return (
     <form onSubmit={saveProfile} className="space-y-7">
       <div>
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">{hindi ? "प्राथमिकताएं" : "Preferences"}</h3>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">{hindi ? "प्राथमिकताएं" : "Preferences"}</h3>
         <label htmlFor="language" className="block text-sm text-gray-500 mb-1">{hindi ? "भाषा" : "Language"}</label>
         <select id="language" value={languageValue} onChange={(event) => setLanguageValue(event.target.value as "ENGLISH" | "HINDI")} className="w-full border rounded-lg px-3 py-2">
           <option value="ENGLISH">English</option>
           <option value="HINDI">हिन्दी</option>
         </select>
+        {languageValue !== language && <p className="mt-2 text-xs text-amber-700">{hindi ? "भाषा बदलने के लिए प्रोफ़ाइल सेव करें।" : "Save the profile to apply the new language."}</p>}
       </div>
       <div>
         <h3 className="mb-3 border-t pt-6 text-sm font-semibold uppercase tracking-wide text-gray-500">{hindi ? "व्यक्तिगत जानकारी" : "Personal information"}</h3>
@@ -154,20 +195,21 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
       </div>
       <div>
         <h3 className="mb-3 border-t pt-6 text-sm font-semibold uppercase tracking-wide text-gray-500">{hindi ? "सत्यापन" : "Verification"}</h3>
-        <label htmlFor="email" className="block text-sm text-gray-500 mb-1">Gmail <span className="text-red-600">*</span></label>
-        <input id="email" type="email" required value={emailValue} onChange={(event) => setEmailValue(event.target.value)} className="w-full border rounded-lg px-3 py-2" />
-        <p className="text-xs text-gray-500">{hindi ? "स्थिति:" : "Status:"} {emailIsVerified && emailValue.toLowerCase() === email.toLowerCase() ? (hindi ? "सत्यापित" : "Verified") : (hindi ? "सत्यापित नहीं" : "Not verified")}</p>
-        {(!emailIsVerified || emailValue.toLowerCase() !== email.toLowerCase()) && <button type="button" onClick={sendEmailOtp} className="text-sm text-brand-700 font-medium mt-2">{hindi ? "ईमेल सत्यापन कोड भेजें" : "Send email verification code"}</button>}
+        <label htmlFor="email" className="block text-sm text-gray-500 mb-1">{hindi ? "ईमेल" : "Email address"} <span className="text-red-600">*</span></label>
+        <input id="email" type="email" required value={email} readOnly className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-600" />
+        <p className="mt-1 text-xs text-gray-500">{hindi ? "ईमेल पहले ही तय है और इसे बदला नहीं जा सकता।" : "Your email is set once at registration and cannot be changed."}</p>
+        <p className="mt-1 text-xs text-gray-500">{hindi ? "स्थिति:" : "Status:"} {emailIsVerified ? (hindi ? "सत्यापित" : "Verified") : (hindi ? "सत्यापित नहीं" : "Not verified")}</p>
+        {!emailIsVerified && <button type="button" onClick={sendEmailOtp} className="mt-2 text-sm font-medium text-brand-700">{hindi ? "ईमेल सत्यापन कोड भेजें" : "Send email verification code"}</button>}
         {emailOtpSent && (
           <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-            <label htmlFor="email-otp" className="block text-sm font-medium text-gray-700 mb-2">{hindi ? "नए ईमेल पर भेजा गया 6 अंकों का OTP दर्ज करें" : "Enter the 6-digit OTP sent to the new email"}</label>
+            <label htmlFor="email-otp" className="block text-sm font-medium text-gray-700 mb-2">{hindi ? `ईमेल ${email} पर भेजा गया 6 अंकों का OTP दर्ज करें` : `Enter the 6-digit OTP sent to ${email}`}</label>
             <div className="flex flex-col gap-2 sm:flex-row"><input id="email-otp" inputMode="numeric" maxLength={6} value={emailCode} onChange={(event) => setEmailCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="123456" className="border rounded-lg px-3 py-2" /><button type="button" onClick={verifyEmail} disabled={emailCode.length !== 6} className="bg-brand-600 text-white rounded-lg px-3 py-2 disabled:opacity-50">{hindi ? "ईमेल सत्यापित करें" : "Verify email"}</button></div>
           </div>
         )}
       </div>
       <div>
         <label htmlFor={otpSent ? "phone-otp" : "phone"} className="block text-sm text-gray-500 mb-1">
-          {otpSent ? (hindi ? "फोन OTP" : "Phone OTP") : (hindi ? "फोन नंबर" : "Phone number")} <span className="text-red-600">*</span>
+          {otpSent ? (hindi ? "फोन OTP" : "Phone OTP") : (hindi ? "फोन नंबर" : "Phone number")}
         </label>
         {otpSent ? (
           <>
@@ -188,10 +230,10 @@ export default function ProfileForm({ name, phone, address, language, phoneVerif
             />
           </>
         ) : (
-          <input id="phone" type="tel" required value={phoneValue} onChange={(event) => { setPhoneValue(event.target.value); setPhoneIsVerified(event.target.value === phone ? phoneVerified : false); }} className="w-full border rounded-lg px-3 py-2" placeholder="Enter phone with country code" />
+          <input id="phone" type="tel" value={phoneValue} onChange={(event) => { setPhoneValue(event.target.value); setPhoneIsVerified(event.target.value === phone ? phoneVerified : false); }} className="w-full border rounded-lg px-3 py-2" placeholder="Enter phone with country code" />
         )}
         {!otpSent && <p className="text-xs text-gray-500">{hindi ? "स्थिति:" : "Status:"} {phoneIsVerified && phoneValue === phone ? (hindi ? "सत्यापित" : "Verified") : (hindi ? "सत्यापित नहीं" : "Not verified")}</p>}
-        {(!otpSent && (!phoneIsVerified || phoneValue !== phone)) && <button type="button" onClick={sendOtp} className="text-sm text-brand-700 font-medium">{hindi ? "फोन सत्यापन कोड भेजें" : "Send phone verification code"}</button>}
+        {(!otpSent && (!phoneIsVerified || phoneValue !== phone)) && <button type="button" onClick={sendOtp} className="text-sm font-medium text-brand-700">{hindi ? "फोन सत्यापन कोड भेजें" : "Send phone verification code"}</button>}
         {otpSent && (
           <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
             <p className="mb-2 text-sm font-medium text-gray-700">{hindi ? "OTP दर्ज करने के बाद सत्यापित करें" : "After entering the OTP, verify your phone"}</p>
